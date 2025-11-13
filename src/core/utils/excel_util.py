@@ -437,3 +437,397 @@ class ExcelUtil:
         except Exception as e:
             self.logger.log_error(e, "get_workbook_info")
             return {}
+            
+    def generate_allure_style_report(self, suites_data: List[Dict[str, Any]], 
+                                    report_name: str = "Test Execution Report") -> str:
+        """
+        Generate Allure-style Excel report với sheet tổng quan và chi tiết từng suite/testcase/steps.
+        
+        Args:
+            suites_data: List of suite data, mỗi suite có format:
+                {
+                    "name": "suite_name",
+                    "passed": 10,
+                    "failed": 2,
+                    "skipped": 1,
+                    "total": 13,
+                    "duration": 120.5,
+                    "test_cases": [
+                        {
+                            "name": "test_name",
+                            "file": "test_file.py",
+                            "class": "TestClass",
+                            "method": "test_method",
+                            "result": "PASSED",
+                            "duration": 5.2,
+                            "error": None,
+                            "steps": [
+                                {
+                                    "name": "step_name",
+                                    "data": {...},
+                                    "timestamp": "...",
+                                    "status": "PASSED"
+                                }
+                            ],
+                            "screenshots": [...]
+                        }
+                    ]
+                }
+            report_name: Tên báo cáo
+            
+        Returns:
+            Đường dẫn file Excel đã tạo
+        """
+        try:
+            workbook = self.create_workbook()
+            
+            # Sheet 1: Overview
+            self._create_overview_sheet(workbook, suites_data, report_name)
+            
+            # Sheet 2+: Details for each suite
+            # for suite in suites_data:
+            #     self._create_suite_detail_sheet(workbook, suite)
+            
+            # Save workbook
+            file_path = f"reports/excel/allure_style_report_{int(time.time())}.xlsx"
+            self.save_workbook(workbook, file_path)
+            
+            self.logger.info(f"Generated Allure-style Excel report: {file_path}")
+            return file_path
+            
+        except Exception as e:
+            self.logger.log_error(e, "generate_allure_style_report")
+            raise
+            
+    def _create_overview_sheet(self, workbook: Workbook, suites_data: List[Dict[str, Any]], 
+                               report_name: str):
+        """Create overview sheet with statistics for all suites."""
+        try:
+            worksheet = workbook.active
+            worksheet.title = "Overview"
+            
+            # Title
+            worksheet.merge_cells('A1:G1')
+            title_cell = worksheet['A1']
+            title_cell.value = report_name
+            title_cell.font = Font(bold=True, size=16)
+            title_cell.alignment = Alignment(horizontal='center', vertical='center')
+            worksheet.row_dimensions[1].height = 25
+            
+            # Tổng hợp tất cả suites
+            total_passed = sum(s.get("passed", 0) for s in suites_data)
+            total_failed = sum(s.get("failed", 0) for s in suites_data)
+            total_skipped = sum(s.get("skipped", 0) for s in suites_data)
+            total_tests = total_passed + total_failed + total_skipped
+            total_duration = sum(s.get("duration", 0) for s in suites_data)
+            pass_rate = (total_passed / total_tests * 100) if total_tests > 0 else 0
+            
+            # Summary section
+            row = 3
+            worksheet.cell(row=row, column=1, value="Overview")
+            worksheet.cell(row=row, column=1).font = Font(bold=True, size=14)
+            row += 1
+            
+            summary_headers = ["Metric", "Value"]
+            summary_data = [
+                ["Total Tests", total_tests],
+                ["Passed", total_passed],
+                ["Failed", total_failed],
+                ["Skipped", total_skipped],
+                ["Pass Rate", f"{pass_rate:.1f}%"],
+                ["Total Duration", f"{total_duration:.2f} seconds"],
+                ["Execution Date", datetime.now().strftime("%Y-%m-%d %H:%M:%S")]
+            ]
+            
+            # Write summary headers
+            for col, header in enumerate(summary_headers, 1):
+                cell = worksheet.cell(row=row, column=col, value=header)
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+            
+            row += 1
+            
+            # Write summary data
+            for data_row in summary_data:
+                for col, value in enumerate(data_row, 1):
+                    worksheet.cell(row=row, column=col, value=value)
+                row += 1
+            
+            row += 2
+            
+            # Suite summary table
+            worksheet.cell(row=row, column=1, value="Test Suite Statistics")
+            worksheet.cell(row=row, column=1).font = Font(bold=True, size=14)
+            row += 1
+            
+            suite_headers = ["Test Suite", "Total", "Passed", "Failed", "Skipped", "Pass Rate", "Duration (s)"]
+            
+            # Write suite headers
+            for col, header in enumerate(suite_headers, 1):
+                cell = worksheet.cell(row=row, column=col, value=header)
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+            
+            row += 1
+            
+            # Write suite data
+            for suite in suites_data:
+                suite_total = suite.get("total", 0)
+                suite_passed = suite.get("passed", 0)
+                suite_failed = suite.get("failed", 0)
+                suite_skipped = suite.get("skipped", 0)
+                suite_pass_rate = (suite_passed / suite_total * 100) if suite_total > 0 else 0
+                suite_duration = suite.get("duration", 0)
+                
+                suite_row = [
+                    suite.get("name", "Unknown"),
+                    suite_total,
+                    suite_passed,
+                    suite_failed,
+                    suite_skipped,
+                    f"{suite_pass_rate:.1f}%",
+                    f"{suite_duration:.2f}"
+                ]
+                
+                for col, value in enumerate(suite_row, 1):
+                    cell = worksheet.cell(row=row, column=col, value=value)
+                    # Color code based on pass rate
+                    if suite_pass_rate == 100:
+                        cell.fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+                    elif suite_pass_rate < 50:
+                        cell.fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+                
+                row += 1
+            
+            # Auto-adjust columns
+            self._auto_adjust_columns(worksheet)
+            
+        except Exception as e:
+            self.logger.log_error(e, "_create_overview_sheet")
+            raise
+            
+    def _create_suite_detail_sheet(self, workbook: Workbook, suite: Dict[str, Any]):
+        """Create detail sheet for a test suite."""
+        try:
+            suite_name = suite.get("name", "Unknown Suite")
+            # Excel sheet name has 31 character limit
+            sheet_name = suite_name[:31] if len(suite_name) <= 31 else suite_name[:28] + "..."
+            worksheet = workbook.create_sheet(sheet_name)
+            
+            # Title
+            worksheet.merge_cells('A1:F1')
+            title_cell = worksheet['A1']
+            title_cell.value = f"Test Suite: {suite_name}"
+            title_cell.font = Font(bold=True, size=14)
+            title_cell.alignment = Alignment(horizontal='center', vertical='center')
+            worksheet.row_dimensions[1].height = 20
+            
+            # Suite summary
+            row = 3
+            worksheet.cell(row=row, column=1, value="Suite Information")
+            worksheet.cell(row=row, column=1).font = Font(bold=True, size=12)
+            row += 1
+            
+            suite_total = suite.get("total", 0)
+            suite_passed = suite.get("passed", 0)
+            suite_failed = suite.get("failed", 0)
+            suite_skipped = suite.get("skipped", 0)
+            suite_pass_rate = (suite_passed / suite_total * 100) if suite_total > 0 else 0
+            suite_duration = suite.get("duration", 0)
+            
+            suite_info_headers = ["Metric", "Value"]
+            suite_info_data = [
+                ["Total Tests", suite_total],
+                ["Passed", suite_passed],
+                ["Failed", suite_failed],
+                ["Skipped", suite_skipped],
+                ["Pass Rate", f"{suite_pass_rate:.1f}%"],
+                ["Execution Duration", f"{suite_duration:.2f} seconds"]
+            ]
+            
+            # Write suite info headers
+            for col, header in enumerate(suite_info_headers, 1):
+                cell = worksheet.cell(row=row, column=col, value=header)
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+            
+            row += 1
+            
+            # Write suite info data
+            for data_row in suite_info_data:
+                for col, value in enumerate(data_row, 1):
+                    worksheet.cell(row=row, column=col, value=value)
+                row += 1
+            
+            row += 2
+            
+            # Test cases list
+            test_cases = suite.get("test_cases", [])
+            if test_cases:
+                worksheet.cell(row=row, column=1, value="Test Cases List")
+                worksheet.cell(row=row, column=1).font = Font(bold=True, size=12)
+                row += 1
+                
+                # Test cases summary table
+                test_case_headers = ["Test Case", "Result", "Duration (s)", "File", "Class", "Method"]
+                
+                # Write test case headers
+                for col, header in enumerate(test_case_headers, 1):
+                    cell = worksheet.cell(row=row, column=col, value=header)
+                    cell.font = Font(bold=True)
+                    cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+                
+                row += 1
+                
+                # Write test case data
+                for test_case in test_cases:
+                    test_case_row = [
+                        test_case.get("name", "Unknown"),
+                        test_case.get("result", "UNKNOWN"),
+                        test_case.get("duration", 0),
+                        test_case.get("file", ""),
+                        test_case.get("class", "N/A"),
+                        test_case.get("method", "N/A")
+                    ]
+                    
+                    for col, value in enumerate(test_case_row, 1):
+                        cell = worksheet.cell(row=row, column=col, value=value)
+                        # Color code based on result
+                        result = test_case.get("result", "")
+                        if result == "PASSED":
+                            cell.fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+                        elif result == "FAILED":
+                            cell.fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+                        elif result == "SKIPPED":
+                            cell.fill = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")
+                    
+                    row += 1
+                
+                row += 2
+                
+                # Details for each test case with steps
+                for test_case in test_cases:
+                    row = self._add_test_case_details(worksheet, test_case, row)
+                    row += 2
+            
+            # Auto-adjust columns
+            self._auto_adjust_columns(worksheet)
+            
+        except Exception as e:
+            self.logger.log_error(e, "_create_suite_detail_sheet")
+            raise
+            
+    def _add_test_case_details(self, worksheet, test_case: Dict[str, Any], start_row: int) -> int:
+        """Add test case details with steps to worksheet. Returns next row."""
+        try:
+            row = start_row
+            
+            test_name = test_case.get("name", "Unknown Test")
+            test_result = test_case.get("result", "UNKNOWN")
+            
+            # Test case header
+            worksheet.merge_cells(f'A{row}:F{row}')
+            header_cell = worksheet.cell(row=row, column=1, value=f"Test Case: {test_name} [{test_result}]")
+            header_cell.font = Font(bold=True, size=11)
+            
+            # Color code header
+            if test_result == "PASSED":
+                header_cell.fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+            elif test_result == "FAILED":
+                header_cell.fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+            elif test_result == "SKIPPED":
+                header_cell.fill = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")
+            
+            row += 1
+            
+            # Test case info
+            test_info = [
+                ["File", test_case.get("file", "Unknown")],
+                ["Class", test_case.get("class", "N/A")],
+                ["Method", test_case.get("method", "N/A")],
+                ["Result", test_result],
+                ["Duration", f"{test_case.get('duration', 0):.2f} seconds"]
+            ]
+            
+            for info in test_info:
+                worksheet.cell(row=row, column=1, value=info[0]).font = Font(bold=True)
+                worksheet.cell(row=row, column=2, value=info[1])
+                row += 1
+            
+            row += 1
+            
+            # Test steps
+            steps = test_case.get("steps", [])
+            if steps:
+                worksheet.cell(row=row, column=1, value="Test Steps")
+                worksheet.cell(row=row, column=1).font = Font(bold=True, size=10)
+                row += 1
+                
+                # Step headers
+                step_headers = ["#", "Step Name", "Status", "Timestamp", "Data"]
+                for col, header in enumerate(step_headers, 1):
+                    cell = worksheet.cell(row=row, column=col, value=header)
+                    cell.font = Font(bold=True)
+                    cell.fill = PatternFill(start_color="E7E6E6", end_color="E7E6E6", fill_type="solid")
+                
+                row += 1
+                
+                # Step data
+                for idx, step in enumerate(steps, 1):
+                    step_name = step.get("name", "Unknown Step")
+                    step_status = step.get("status", "UNKNOWN")
+                    step_timestamp = step.get("timestamp", "")
+                    step_data = step.get("data", "")
+                    
+                    step_row = [
+                        idx,
+                        step_name,
+                        step_status,
+                        step_timestamp,
+                        str(step_data)[:100] if step_data else ""  # Truncate long data
+                    ]
+                    
+                    for col, value in enumerate(step_row, 1):
+                        cell = worksheet.cell(row=row, column=col, value=value)
+                        # Color code based on step status
+                        if step_status == "PASSED":
+                            cell.fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+                        elif step_status == "FAILED":
+                            cell.fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+                    
+                    row += 1
+                
+                row += 1
+            
+            # Error information nếu có
+            error = test_case.get("error")
+            if error:
+                worksheet.cell(row=row, column=1, value="Error Details")
+                worksheet.cell(row=row, column=1).font = Font(bold=True, color="FF0000", size=10)
+                row += 1
+                
+                error_lines = str(error).split('\n')
+                for line in error_lines[:10]:  # Limit error lines
+                    worksheet.cell(row=row, column=1, value=line[:200])  # Truncate long lines
+                    worksheet.cell(row=row, column=1).font = Font(name="Courier", size=8)
+                    row += 1
+                
+                row += 1
+            
+            # Screenshots if available
+            screenshots = test_case.get("screenshots", [])
+            if screenshots:
+                worksheet.cell(row=row, column=1, value="Screenshots")
+                worksheet.cell(row=row, column=1).font = Font(bold=True, size=10)
+                row += 1
+                
+                for screenshot in screenshots[:5]:  # Limit số lượng screenshots
+                    if isinstance(screenshot, str):
+                        worksheet.cell(row=row, column=1, value=screenshot)
+                        row += 1
+            
+            return row
+            
+        except Exception as e:
+            self.logger.log_error(e, "_add_test_case_details")
+            return start_row

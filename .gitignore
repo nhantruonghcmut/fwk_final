@@ -10,3 +10,4 @@
 **/.vscode
 **/.idea
 **/reports
+node_modules

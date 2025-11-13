@@ -92,7 +92,28 @@ class ConfigReader:
         
     def read_test_data(self, data_file_path: str) -> Dict[str, Any]:
         """Read test data configuration."""
-        return self.read_yaml(data_file_path)
+        # If path starts with "testdata/", read from project root instead of config_dir
+        if data_file_path.startswith("testdata/"):
+            # Get project root (parent of config_dir)
+            project_root = os.path.dirname(os.path.dirname(self.config_dir))
+            full_path = os.path.join(project_root, data_file_path)
+            try:
+                self.logger.debug(f"🔍 Reading test data file: {full_path}")
+                with open(full_path, 'r', encoding='utf-8') as file:
+                    content = yaml.safe_load(file)
+                    return content if content is not None else {}
+            except FileNotFoundError:
+                self.logger.error(f"Test data file not found: {full_path}")
+                return {}
+            except yaml.YAMLError as e:
+                self.logger.error(f"Error parsing YAML file {full_path}: {str(e)}")
+                return {}
+            except Exception as e:
+                self.logger.error(f"Error reading test data file {full_path}: {str(e)}")
+                return {}
+        else:
+            # Use existing read_yaml for paths relative to config_dir
+            return self.read_yaml(data_file_path)
         
     def read_main_config(self) -> Dict[str, Any]:
         """Read main configuration file."""

@@ -67,6 +67,10 @@ class TestListener:
         # Reset screenshot flag cho step mới
         self._screenshot_taken_in_step = False
         
+        # Thêm step vào test_context
+        if self.test_context:
+            self.test_context.add_step(step_name, None)
+        
         try:
             import allure
             # Tạo Allure step context
@@ -86,7 +90,19 @@ class TestListener:
         
         if result == "FAILED" and error:
             self.logger.error(f"Step failed: {step_name} - {str(error)}")
-            
+        
+        # Cập nhật status cho step cuối cùng trong test_context
+        if self.test_context:
+            steps = self.test_context.get_steps()
+            if steps:
+                # Tìm step cuối cùng có tên trùng với step_name
+                for step in reversed(steps):
+                    if step.get("name") == step_name:
+                        step["status"] = result
+                        if error:
+                            step["error"] = str(error)
+                        break
+        
         # Đóng Allure step context
         try:
             if self.step_stack:
@@ -120,6 +136,10 @@ class TestListener:
     def on_screenshot_taken(self, screenshot_path: str, description: str = "Screenshot"):
         """Handle screenshot taken event."""
         self.logger.info(f"Screenshot taken: {screenshot_path}")
+        
+        # Thêm screenshot vào test_context
+        if self.test_context:
+            self.test_context.add_screenshot(screenshot_path, description)
         
         try:
             import allure

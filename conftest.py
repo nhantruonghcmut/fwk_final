@@ -35,6 +35,9 @@ suite_listener = SuiteListener(config_manager,browser_factory,logger)
 test_listener = TestListener(logger)
 allure_helper = AllureEnvironmentHelper()
 
+# Global device locks for parallel execution (prevent concurrent access to same device)
+_device_locks = {}
+
 
 # ============================================================================
 # PYTEST CONFIGURATION
@@ -202,59 +205,6 @@ def pytest_sessionstart(session):
     
     logger.info(f"[START] Test session started with {test_count} tests")
 
-def pytest_sessionfinish(session, exitstatus):
-    # """Log session finish with accurate statistics."""
-    # # Get the terminal reporter which has accurate final stats
-    # terminalreporter = session.config.pluginmanager.get_plugin('terminalreporter')
-    
-    # if terminalreporter:
-    #     stats = terminalreporter.stats
-    #     passed = len(stats.get('passed', []))
-    #     failed = len(stats.get('failed', []))
-    #     skipped = len(stats.get('skipped', []))
-    # else:
-    #     # Fallback to session counters
-    #     passed = session.testscollected - session.testsfailed
-    #     failed = session.testsfailed
-    #     skipped = 0
-    
-    # logger.info(f"Results - Passed: {passed}, Failed: {failed}, Skipped: {skipped}")
-    # passed = len([item for item in session.items if hasattr(item, 'rep_call') and item.rep_call.passed])
-    # failed = len([item for item in session.items if hasattr(item, 'rep_call') and item.rep_call.failed])
-    # skipped = len([item for item in session.items if hasattr(item, 'rep_call') and item.rep_call.skipped])
-    
-    # logger.log_suite_end("Test Automation Suite", passed, failed, skipped, 0)
-    if config_manager.is_allure_enabled():
-            try:
-                import subprocess
-                results_dir = config_manager.get_allure_results_directory()
-                report_dir = config_manager.get_allure_report_directory()
-                
-                logger.info("=" * 60)
-                logger.info("[ALLURE] Generating report...")
-                
-                # Generate report
-                cmd = [
-                    "allure", "generate",
-                    results_dir,                 
-                    "-o", report_dir,
-                     '--single-file',"--clean", 
-                ]
-                
-                result = subprocess.run(cmd, capture_output=True, text=True)
-                
-                if result.returncode == 0:
-                    logger.info(f"[ALLURE] ✅ Report generated: {report_dir}/index.html")
-                    logger.info(f"[ALLURE] 🌐 Open with: allure open {report_dir}")
-                else:
-                    logger.error(f"[ALLURE] ❌ Failed to generate report: {result.stderr}")
-                
-                logger.info("=" * 60)
-                
-            except FileNotFoundError:
-                logger.warning("[ALLURE] ⚠️ Allure CLI not found. Install with: scoop install allure")
-            except Exception as e:
-                logger.error(f"[ALLURE] ❌ Error generating report: {e}")
 
 
 # ============================================================================
@@ -384,51 +334,67 @@ def get_port_for_worker(worker_id: str, base_port: int = 4723) -> int:
     return actual_port
 
 
-@pytest.fixture(scope="function")
-def appium_service(worker_id):
+@pytest.fixture(scope="session")
+def appium_service(request):
     """
-    Khởi động Appium service duy nhất per worker session.
+    Start Appium service per worker session (one service per worker).
     
-    Đảm bảo:
-    - Mỗi worker nhận port khác nhau
-    - Tự động tìm port trống nếu port gợi ý bị chiếm
-    - Cleanup service khi test kết thúc
+    Ensures:
+    - Each worker gets a different port
+    - Automatically finds available port if suggested port is taken
+    - Cleans up service when worker session ends
     """
-    start_port = get_port_for_worker(worker_id)
+    # Get worker_id safely (may be "master" if not using xdist)
+    # In pytest-xdist, worker_id is available via request.config.workerinput
+    try:
+        # Try to get worker_id from pytest-xdist workerinput
+        if hasattr(request.config, 'workerinput') and request.config.workerinput:
+            worker = request.config.workerinput.get('workerid', 'master')
+        else:
+            # Not using xdist or master process
+            worker = "master"
+    except (AttributeError, KeyError, TypeError):
+        # Fallback to master if workerinput not available
+        worker = "master"
+    
+    start_port = get_port_for_worker(worker)
 
-    logger.info(f"Starting Appium service on port {start_port}... for worker {worker_id}")
+    logger.info(f"[{worker}] Starting Appium service on port {start_port}...")
 
     service = AppiumService()
     
     try:
-        # Khởi động Appium service
+        # Start Appium service
         service.start(args=['--port', str(start_port), '--relaxed-security'])
         
-        # Chờ service khởi động
+        # Wait for service to start
         time.sleep(2)
         
-        # Verify service đang chạy
+        # Verify service is running
         if service.is_running:
-            logger.info(f"Appium service running on port {start_port}")
-            # Trả về dict chứa service và port
+            logger.info(f"[{worker}] Appium service running on port {start_port}")
+            # Return dict containing service and port
             yield {
                 'service': service,
                 'port': start_port,
                 'url': f"http://localhost:{start_port}",
-                'worker_id': worker_id
+                'worker_id': worker
             }
         else:
             raise RuntimeError(f"Appium service failed to start on port {start_port}")
     
     except Exception as e:
-        logger.error(f"Error starting Appium service: {e}")
+        logger.error(f"[{worker}] Error starting Appium service: {e}")
         raise
     
     finally:
-        # Cleanup: dừng service
+        # Cleanup: stop service
         if service.is_running:
-            logger.info(f"[{worker_id}] 🛑 Stopping Appium service on port {start_port}")
-            service.stop()
+            logger.info(f"[{worker}] 🛑 Stopping Appium service on port {start_port}")
+            try:
+                service.stop()
+            except Exception as e:
+                logger.warning(f"[{worker}] Error stopping Appium service: {e}")
 
 
 @pytest.fixture(scope="session")
@@ -438,12 +404,14 @@ def appium_url(appium_service):
 
 
 
-@pytest.fixture(scope="function") ## single
+@pytest.fixture(scope="function")
 def appium_driver(request, appium_service) -> Generator[webdriver.Remote, None, None]:
     """
     Create Appium driver for mobile testing - SCOPE FUNCTION.
-    Mỗi test function nhận một driver mới, đảm bảo môi trường độc lập.
-    Tích hợp ADBUtil để kiểm tra device trước khi kết nối Appium
+    Each test function gets a new driver, ensuring isolated environment.
+    Integrates ADBUtil to check device before connecting to Appium.
+    
+    Note: appium_service is session-scoped (one per worker), but driver is function-scoped.
     """
     if not request.config.getoption("--mobile"):
         logger.warning("Mobile test skipped")
@@ -458,119 +426,130 @@ def appium_driver(request, appium_service) -> Generator[webdriver.Remote, None, 
     required_keys = ["platform_name", "platform_version", "device_name", "automation_name"]
     missing_keys = [k for k in required_keys if k not in device_cfg or not device_cfg[k]]
     if missing_keys:
-        pytest.skip(f"Thiếu thông tin cấu hình device: {', '.join(missing_keys)}")
+        pytest.skip(f"Missing device configuration: {', '.join(missing_keys)}")
     
     platform = device_cfg.get("platform_name", "").lower()
     
-    # Android: cần appPackage và appActivity
-    if platform == "android":       
-        # Lấy device_id (udid) từ config hoặc device_name
-        device_id = device_cfg.get("udid") or device_cfg.get("device_name", "")
+    # Thread lock for device access (prevent concurrent access to same device)
+    # Use global locks dictionary to persist across fixture calls
+    import threading
+    global _device_locks
+    
+    device_id = device_cfg.get("udid") or device_cfg.get("device_name", "")
+    if device_id not in _device_locks:
+        _device_locks[device_id] = threading.Lock()
+    
+    device_lock = _device_locks[device_id]
+    
+    # Use lock to prevent concurrent access to same device (only during driver creation)
+    with device_lock:
+        # Android: need appPackage and appActivity
+        if platform == "android":       
+            # Get device_id (udid) from config or device_name
+            device_id = device_cfg.get("udid") or device_cfg.get("device_name", "")
+            
+            # Use ADBUtil to check device
+            adb_util = ADBUtil()
+            
+            # Check if device is connected
+            logger.info(f"[{worker_info}] [ADB] Checking device: {device_id}")
+            if not adb_util.is_device_connected(device_id):
+                # If device with exact ID not found, try to find available device
+                devices = adb_util.get_devices()
+                if not devices:
+                    pytest.skip(f"No devices found. Please check ADB connection.")
+                else:
+                    logger.warning(f"[{worker_info}] [ADB] Device {device_id} not found. Available devices: {[d['device_id'] for d in devices]}")
+                    # If devices available, use first one
+                    device_id = devices[0]['device_id']
+                    logger.info(f"[{worker_info}] [ADB] Using device: {device_id}")
+            
+            # Wait for device ready
+            logger.info(f"[{worker_info}] [ADB] Waiting for device {device_id} to be ready...")
+            if not adb_util.wait_for_device(device_id, timeout=30):
+                pytest.skip(f"Device {device_id} not ready after 30 seconds")
+            
+            logger.info(f"[{worker_info}] [ADB] Device {device_id} is ready")
+            
+            # Get device info for logging
+            device_info = adb_util.get_device_info(device_id)
+            if device_info:
+                logger.info(f"[{worker_info}] [ADB] Device info: {device_info}")
+            
+            option = UiAutomator2Options()
+            for k, v in device_cfg.items():
+                # Map snake_case to camelCase for Appium capabilities
+                if k == "platform_name":
+                    option.platform_name = v
+                elif k == "platform_version":
+                    option.platform_version = v
+                elif k == "device_name":
+                    option.device_name = v
+                elif k == "automation_name":
+                    option.automation_name = v
+                elif k == "app_package":
+                    option.app_package = v
+                elif k == "app_activity":
+                    option.app_activity = v
+                elif k == "udid":
+                    option.udid = v
+                elif k == "no_reset":
+                    option.no_reset = v
+                elif k == "full_reset":
+                    option.full_reset = v
+                elif k == "new_command_timeout":
+                    option.new_command_timeout = v
+                else:
+                    option.set_capability(k, v)
+            
+            # Ensure udid is set
+            if not hasattr(option, 'udid') or not option.udid:
+                option.udid = device_id
         
-        # Sử dụng ADBUtil để kiểm tra device
-        adb_util = ADBUtil()
-        
-        # Kiểm tra device có connected không
-        logger.info(f"[{worker_info}] [ADB] Đang kiểm tra device: {device_id}")
-        if not adb_util.is_device_connected(device_id):
-            # Nếu không tìm thấy device với ID chính xác, thử tìm device available
-            devices = adb_util.get_devices()
-            if not devices:
-                pytest.skip(f"Không tìm thấy device nào được kết nối. Vui lòng kiểm tra ADB connection.")
-            else:
-                logger.warning(f"[ADB] Device {device_id} không tìm thấy. Các devices available: {[d['device_id'] for d in devices]}")
-                # Nếu có device, dùng device đầu tiên
-                device_id = devices[0]['device_id']
-                logger.info(f"[{worker_info}] [ADB] Sử dụng device: {device_id}")
-        
-        # Đợi device ready
-        logger.info(f"[ADB] Đang đợi device {device_id} sẵn sàng...")
-        if not adb_util.wait_for_device(device_id, timeout=30):
-            pytest.skip(f"Device {device_id} không sẵn sàng sau 30 giây")
-        
-        logger.info(f"[ADB] Device {device_id} đã sẵn sàng")
-        
-        # Lấy device info để log
-        device_info = adb_util.get_device_info(device_id)
-        if device_info:
-            logger.info(f"[{worker_info}] [ADB] Device info: {device_info}")
-        
-        option = UiAutomator2Options()
-        for k, v in device_cfg.items():
-            # Map snake_case to camelCase for Appium capabilities
-            if k == "platform_name":
-                option.platform_name = v
-            elif k == "platform_version":
-                option.platform_version = v
-            elif k == "device_name":
-                option.device_name = v
-            elif k == "automation_name":
-                option.automation_name = v
-            elif k == "app_package":
-                option.app_package = v
-            elif k == "app_activity":
-                option.app_activity = v
-            elif k == "udid":
-                option.udid = v
-            elif k == "no_reset":
-                option.no_reset = v
-            elif k == "full_reset":
-                option.full_reset = v
-            elif k == "new_command_timeout":
-                option.new_command_timeout = v
-            else:
+        # iOS: need bundleId
+        elif platform == "ios":
+            if "bundleId" not in device_cfg or not device_cfg["bundleId"]:
+                pytest.skip("Missing iOS configuration: bundleId")
+            option = XCUITestOptions()
+            for k, v in device_cfg.items():
                 option.set_capability(k, v)
+        else:
+            pytest.skip(f"Unsupported platform: {platform}")
         
-        # Đảm bảo có udid
-        if not hasattr(option, 'udid') or not option.udid:
-            option.udid = device_id
-    
-    # iOS: cần bundleId
-    elif platform == "ios":
-        if "bundleId" not in device_cfg or not device_cfg["bundleId"]:
-            pytest.skip("Thiếu thông tin cấu hình iOS: bundleId")
-        option = XCUITestOptions()
-        for k, v in device_cfg.items():
-            option.set_capability(k, v)
-    else:
-        pytest.skip(f"Unsupported platform: {platform}")
-    
-    logger.info(f"[APPIUM] Capabilities: {option.to_capabilities()}")
-    
-    try:        
-        # Tạo driver với retry
+        logger.info(f"[{worker_info}] [APPIUM] Capabilities: {option.to_capabilities()}")
+        
+        # Create driver with retry (inside lock to prevent concurrent creation)
         max_retries = 3
         retry_delay = 5
         for attempt in range(max_retries):
             try:
-                logger.info(f"[{worker_info}] [APPIUM] Đang kết nối đến Appium server (lần thử {attempt + 1}/{max_retries})...")
+                logger.info(f"[{worker_info}] [APPIUM] Connecting to Appium server (attempt {attempt + 1}/{max_retries})...")
                 driver = webdriver.Remote(appium_service['url'], options=option)
-                logger.info(f"[{worker_info}] [APPIUM-DONE] Đã tạo Appium driver thành công")
+                logger.info(f"[{worker_info}] [APPIUM-DONE] Appium driver created successfully")
                 break
             except Exception as e:
                 if attempt < max_retries - 1:
-                    logger.warning(f"[{worker_info}] [APPIUM] Kết nối thất bại (lần {attempt + 1}): {str(e)}")
-                    logger.info(f"[{worker_info}] [APPIUM] Đợi {retry_delay} giây trước khi thử lại...")
+                    logger.warning(f"[{worker_info}] [APPIUM] Connection failed (attempt {attempt + 1}): {str(e)}")
+                    logger.info(f"[{worker_info}] [APPIUM] Waiting {retry_delay} seconds before retry...")
                     time.sleep(retry_delay)
                 else:
-                    logger.error(f"[{worker_info}] [APPIUM-ERROR] Không thể kết nối đến Appium sau {max_retries} lần thử")
+                    logger.error(f"[{worker_info}] [APPIUM-ERROR] Cannot connect to Appium after {max_retries} attempts")
                     raise
-        
+    
+    # Yield driver outside lock to allow concurrent test execution
+    try:
         yield driver
-        
     except Exception as e:
-        logger.error(f"[{worker_info}] [APPIUM] ❌ Lỗi khi tạo Appium driver: {str(e)}")
-        logger.error(f"[{worker_info}] [APPIUM] Chi tiết lỗi: {type(e).__name__}")
-        pytest.fail(f"Không thể tạo Appium driver: {str(e)}")
-        
+        logger.error(f"[{worker_info}] [APPIUM] ❌ Error during test execution: {str(e)}")
+        raise
     finally:
         # Cleanup
         if driver is not None:
             try:
                 driver.quit()
-                logger.debug(f"[{worker_info}] 🧹 Đã đóng Appium driver")
+                logger.debug(f"[{worker_info}] 🧹 Appium driver closed")
             except Exception as e:
-                logger.warning(f"[{worker_info}] Lỗi khi đóng driver: {str(e)}")
+                logger.warning(f"[{worker_info}] Error closing driver: {str(e)}")
 
 
 
@@ -625,6 +604,11 @@ def pytest_runtest_makereport(item, call):
                     
                     logger.info(f"Screenshot saved: {screenshot_path}")
                     
+                    # Thêm screenshot vào test_context
+                    test_context = getattr(item, "test_context", None)
+                    if test_context:
+                        test_context.add_screenshot(screenshot_path, "Failure Screenshot")
+                    
                     # Attach to Allure if enabled
                     if config_manager.is_allure_enabled():
                         import allure
@@ -650,6 +634,11 @@ def pytest_runtest_makereport(item, call):
                 page.screenshot(path=screenshot_path, full_page=True)
                 
                 logger.info(f"Screenshot saved: {screenshot_path}")
+                
+                # Thêm screenshot vào test_context
+                test_context = getattr(item, "test_context", None)
+                if test_context:
+                    test_context.add_screenshot(screenshot_path, "Success Screenshot")
             
             except Exception as e:
                 logger.error(f"Failed to take screenshot: {e}")
@@ -662,6 +651,77 @@ def pytest_runtest_makereport(item, call):
             test_listener.on_test_end(item.name, "SKIPPED", None)
         else:
             test_listener.on_test_end(item.name, "PASSED", None)
+        
+        # Notify suite listener với đầy đủ thông tin cho Allure-style report
+        if report.when == "call":
+            # Lấy test context từ item
+            test_context = getattr(item, "test_context", None)
+            
+            # Lấy class và method từ item
+            test_class = None
+            test_method = item.name
+            if hasattr(item, "cls") and item.cls:
+                test_class = item.cls.__name__
+            elif hasattr(item, "parent") and hasattr(item.parent, "cls") and item.parent.cls:
+                test_class = item.parent.cls.__name__
+            
+            # Lấy test file path
+            test_file = item.fspath.strpath if hasattr(item, 'fspath') else str(item.path)
+            try:
+                test_file = os.path.relpath(test_file, os.getcwd())
+            except ValueError:
+                pass
+            
+            # Lấy steps từ test_context
+            steps = []
+            if test_context:
+                raw_steps = test_context.get_steps()
+                for step in raw_steps:
+                    # Thêm status cho step (mặc định PASSED, có thể cải thiện sau)
+                    step_with_status = {
+                        "name": step.get("name", "Unknown Step"),
+                        "data": step.get("data"),
+                        "timestamp": step.get("timestamp", ""),
+                        "status": step.get("status", "PASSED")
+                    }
+                    steps.append(step_with_status)
+            
+            # Lấy screenshots từ test_context
+            screenshots = []
+            if test_context:
+                raw_screenshots = test_context.get_screenshots()
+                for screenshot in raw_screenshots:
+                    if isinstance(screenshot, dict):
+                        screenshots.append(screenshot.get("path", ""))
+                    elif isinstance(screenshot, str):
+                        screenshots.append(screenshot)
+            
+            # Tính duration
+            duration = report.duration if hasattr(report, 'duration') else 0
+            
+            # Xác định result
+            if report.failed:
+                result = "FAILED"
+                error_msg = str(report.longrepr) if hasattr(report, 'longrepr') and report.longrepr else None
+            elif report.skipped:
+                result = "SKIPPED"
+                error_msg = None
+            else:
+                result = "PASSED"
+                error_msg = None
+            
+            # Gọi suite_listener.on_test_end với đầy đủ thông tin
+            suite_listener.on_test_end(
+                test_name=item.name,
+                test_file=test_file,
+                result=result,
+                duration=duration,
+                error=error_msg,
+                test_class=test_class,
+                test_method=test_method,
+                steps=steps,
+                screenshots=screenshots
+            )
 def pytest_terminal_summary(terminalreporter, exitstatus, config):
     """
     Hook called after all tests finish, before terminal summary.
@@ -705,38 +765,179 @@ def pytest_sessionfinish(session, exitstatus):
     Hook called at session finish.
     Only handle Allure report generation here.
     Stats are logged in pytest_terminal_summary.
+    
+    Note: When using pytest-xdist, this hook is called on each worker.
+    Only generate report on master process (not on workers).
     """
-    # Generate Allure report
+    # Only generate report on master process (not on workers)
+    # When using pytest-xdist, workers have workerinput attribute
+    try:
+        if hasattr(session.config, 'workerinput') and session.config.workerinput:
+            # This is a worker process, skip report generation
+            logger.debug(f"[ALLURE] Skipping report generation on worker process")
+            return
+    except (AttributeError, TypeError):
+        # Not using xdist or master process, continue
+        pass
+    
+    # Generate Allure report (only on master process)
     if config_manager.is_allure_enabled():
         try:
             import subprocess
+            import os
+            from pathlib import Path
+            
             results_dir = config_manager.get_allure_results_directory()
             report_dir = config_manager.get_allure_report_directory()
             
             logger.info("=" * 60)
-            logger.info("[ALLURE] Generating report...")
+            logger.info("[ALLURE] Starting report generation...")
+            logger.info(f"[ALLURE] Allure enabled: {config_manager.is_allure_enabled()}")
+            logger.info(f"[ALLURE] Results directory: {results_dir}")
+            logger.info(f"[ALLURE] Report directory: {report_dir}")
             
-            cmd = [
-                "allure", "generate",
-                results_dir,                 
-                "-o", report_dir,
-                "--single-file", "--clean", 
-            ]
+            # Ensure directories exist
+            os.makedirs(results_dir, exist_ok=True)
+            os.makedirs(report_dir, exist_ok=True)
             
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            # Check if results directory exists and list files
+            results_path = Path(results_dir)
+            if not results_path.exists():
+                logger.warning(f"[ALLURE] ⚠️ Results directory does not exist: {results_dir}")
+                return
+            
+            # List all files in results directory
+            result_files = list(results_path.iterdir())
+            logger.info(f"[ALLURE] Found {len(result_files)} items in results directory")
+            
+            if not result_files:
+                logger.warning(f"[ALLURE] ⚠️ No results found in {results_dir}. Skipping report generation.")
+                logger.info(f"[ALLURE] Make sure tests are executed with Allure plugin enabled.")
+                return
+            
+            # Log some file names for debugging
+            file_names = [f.name for f in result_files[:10]]  # First 10 files
+            logger.info(f"[ALLURE] Sample result files: {file_names}")
+            
+            # Check if Allure CLI is available
+            allure_cli_available = False
+            allure_cmd = None
+            
+            # Try to find allure in PATH first
+            try:
+                check_result = subprocess.run(
+                    ["allure", "--version"],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                if check_result.returncode == 0:
+                    logger.info(f"[ALLURE] Allure CLI version: {check_result.stdout.strip()}")
+                    allure_cli_available = True
+                    allure_cmd = "allure"
+                else:
+                    logger.warning(f"[ALLURE] Allure CLI check failed: {check_result.stderr}")
+            except FileNotFoundError:
+                # Try to find allure in node_modules
+                node_modules_allure = os.path.join("node_modules", ".bin", "allure")
+                if os.path.exists(node_modules_allure) or os.path.exists(node_modules_allure + ".cmd"):
+                    try:
+                        check_result = subprocess.run(
+                            ["npx", "allure", "--version"],
+                            capture_output=True,
+                            text=True,
+                            timeout=10
+                        )
+                        if check_result.returncode == 0:
+                            logger.info(f"[ALLURE] Allure CLI version (via npm): {check_result.stdout.strip()}")
+                            allure_cli_available = True
+                            allure_cmd = "npx"
+                            logger.info("[ALLURE] Using Allure CLI from npm (npx allure)")
+                        else:
+                            logger.warning(f"[ALLURE] Allure CLI check failed: {check_result.stderr}")
+                    except Exception as e:
+                        logger.warning(f"[ALLURE] Could not check Allure CLI via npm: {e}")
+                
+                if not allure_cli_available:
+                    logger.error("[ALLURE] ❌ Allure CLI not found in PATH or node_modules")
+                    logger.error("[ALLURE] Install options:")
+                    logger.error("[ALLURE]   1. npm install allure-commandline")
+                    logger.error("[ALLURE]   2. scoop install allure")
+                    logger.error("[ALLURE]   3. Download from: https://github.com/allure-framework/allure2/releases")
+            except Exception as e:
+                logger.warning(f"[ALLURE] Could not check Allure CLI version: {e}")
+            
+            # Only generate report if Allure CLI is available
+            if not allure_cli_available:
+                logger.warning("[ALLURE] ⚠️ Skipping report generation - Allure CLI not available")
+                logger.info("=" * 60)
+                return
+            
+            # Generate report
+            if allure_cmd == "npx":
+                cmd = [
+                    "npx", "allure", "generate",
+                    results_dir,                 
+                    "-o", report_dir,
+                    "--single-file", "--clean"
+                ]
+            else:
+                cmd = [
+                    "allure", "generate",
+                    results_dir,                 
+                    "-o", report_dir,
+                    "--single-file", "--clean"
+                ]
+            
+            logger.info(f"[ALLURE] Executing command: {' '.join(cmd)}")
+            try:
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            except FileNotFoundError:
+                logger.error("[ALLURE] ❌ Allure CLI not found when trying to generate report")
+                logger.error("[ALLURE] Install options:")
+                logger.error("[ALLURE]   1. npm install allure-commandline")
+                logger.error("[ALLURE]   2. scoop install allure")
+                logger.error("[ALLURE]   3. Download from: https://github.com/allure-framework/allure2/releases")
+                logger.info("=" * 60)
+                return
+            
+            logger.info(f"[ALLURE] Command exit code: {result.returncode}")
             
             if result.returncode == 0:
-                logger.info(f"[ALLURE] ✅ Report generated: {report_dir}/index.html")
-                logger.info(f"[ALLURE] 🌐 Open with: allure open {report_dir}")
+                report_file = os.path.join(report_dir, "index.html")
+                if os.path.exists(report_file):
+                    file_size = os.path.getsize(report_file)
+                    logger.info(f"[ALLURE] ✅ Report generated successfully!")
+                    logger.info(f"[ALLURE] Report file: {report_file}")
+                    logger.info(f"[ALLURE] File size: {file_size:,} bytes")
+                    logger.info(f"[ALLURE] 🌐 Open with: file:///{os.path.abspath(report_file).replace(os.sep, '/')}")
+                else:
+                    logger.warning(f"[ALLURE] ⚠️ Report file not found at expected location: {report_file}")
+                    # List files in report directory
+                    if os.path.exists(report_dir):
+                        report_files = list(Path(report_dir).iterdir())
+                        logger.info(f"[ALLURE] Files in report directory: {[f.name for f in report_files]}")
             else:
-                logger.error(f"[ALLURE] ❌ Failed to generate report: {result.stderr}")
+                logger.error(f"[ALLURE] ❌ Failed to generate report (exit code: {result.returncode})")
+                if result.stdout:
+                    logger.error(f"[ALLURE] stdout:\n{result.stdout}")
+                if result.stderr:
+                    logger.error(f"[ALLURE] stderr:\n{result.stderr}")
             
             logger.info("=" * 60)
             
         except FileNotFoundError:
-            logger.warning("[ALLURE] ⚠️ Allure CLI not found. Install with: scoop install allure")
+            logger.error("[ALLURE] ❌ Allure CLI not found in PATH or node_modules")
+            logger.error("[ALLURE] Install options:")
+            logger.error("[ALLURE]   1. npm install allure-commandline")
+            logger.error("[ALLURE]   2. scoop install allure")
+            logger.error("[ALLURE]   3. Download from: https://github.com/allure-framework/allure2/releases")
+        except subprocess.TimeoutExpired:
+            logger.error("[ALLURE] ❌ Report generation timed out after 5 minutes")
         except Exception as e:
             logger.error(f"[ALLURE] ❌ Error generating report: {e}")
+            import traceback
+            logger.error(f"[ALLURE] Traceback:\n{traceback.format_exc()}")
 
 
 def pytest_collection_modifyitems(config, items):

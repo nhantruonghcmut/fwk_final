@@ -402,7 +402,7 @@ class ConfigManager:
         Args:
             data_name: name of the data in test_data config (env, global config)
             Ex: test_data:
-                    users_file: "src/config/testdata/users.yaml"
+                    users_file: "testdata/users.yaml"
         Returns:
             Dict containing test data
         """

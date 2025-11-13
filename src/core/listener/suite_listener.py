@@ -56,14 +56,20 @@ class SuiteListener:
         """Handle individual test start event."""
         self.logger.info(f"Starting test: {test_name} in {test_file}")
         
-    def on_test_end(self, test_name: str, test_file: str, result: str, duration: float, error: str = None):
+    def on_test_end(self, test_name: str, test_file: str, result: str, duration: float, 
+                   error: str = None, test_class: str = None, test_method: str = None,
+                   steps: list = None, screenshots: list = None):
         """Handle individual test end event."""
         test_result = {
             "name": test_name,
             "file": test_file,
+            "class": test_class or "N/A",
+            "method": test_method or test_name,
             "result": result,
             "duration": duration,
             "error": error,
+            "steps": steps or [],
+            "screenshots": screenshots or [],
             "timestamp": time.time()
         }
         self.test_results.append(test_result)
@@ -130,22 +136,85 @@ class SuiteListener:
         try:
             # Generate Allure report
             self.allure_generator.generate_report()
-            if self.config_manager.get_config_value("reports.excel.enabled"):
-            # Generate Excel report
-                from src.core.utils.excel_util import ExcelUtil
-                excel_util = ExcelUtil()
-                excel_path = excel_util.create_test_report(self.test_results, suite_name)  
-                self.logger.info(f"Generated Excel report: {excel_path}")
             
-            # Generate PDF summary
-            if self.config_manager.get_config_value("reports.pdf.enabled"):
-                from src.core.utils.pdf_util import PDFUtil
-                pdf_util = PDFUtil()
-                pdf_path = pdf_util.generate_test_summary(suite_name, passed, failed, skipped, duration)
-                self.logger.info(f"Generated PDF report: {pdf_path}") 
+            # Generate Allure-style reports (PDF và Excel)
+            if (self.config_manager.get_config_value("reports.excel.enabled") or 
+                self.config_manager.get_config_value("reports.pdf.enabled")):
+                
+                # Tạo cấu trúc suites_data cho Allure-style report
+                suites_data = self._prepare_allure_style_data(suite_name, passed, failed, skipped, duration)
+                
+                # Generate Excel Allure-style report
+                if self.config_manager.get_config_value("reports.excel.enabled"):
+                    from src.core.utils.excel_util import ExcelUtil
+                    excel_util = ExcelUtil()
+                    excel_path = excel_util.generate_allure_style_report(suites_data, f"Test Execution Report - {suite_name}")
+                    self.logger.info(f"Generated Allure-style Excel report: {excel_path}")
+                
+                # Generate PDF Allure-style report
+                if self.config_manager.get_config_value("reports.pdf.enabled"):
+                    from src.core.utils.pdf_util import PDFUtil
+                    pdf_util = PDFUtil()
+                    pdf_path = pdf_util.generate_allure_style_report(suites_data, f"Test Execution Report - {suite_name}")
+                    self.logger.info(f"Generated Allure-style PDF report: {pdf_path}")
             
         except Exception as e:
             self.logger.error(f"Failed to generate reports: {str(e)}")
+            
+    def _prepare_allure_style_data(self, suite_name: str, passed: int, failed: int, skipped: int, duration: float) -> list:
+        """Chuẩn bị dữ liệu theo format Allure-style cho PDF và Excel reports."""
+        try:
+            # Chuyển đổi test_results thành format Allure-style
+            test_cases = []
+            for test_result in self.test_results:
+                # Lấy steps và thêm status nếu chưa có
+                steps = []
+                for step in test_result.get("steps", []):
+                    step_with_status = {
+                        "name": step.get("name", "Unknown Step"),
+                        "data": step.get("data"),
+                        "timestamp": step.get("timestamp", ""),
+                        "status": step.get("status", "PASSED")  # Default to PASSED if not specified
+                    }
+                    steps.append(step_with_status)
+                
+                # Lấy screenshots paths
+                screenshots = []
+                for screenshot in test_result.get("screenshots", []):
+                    if isinstance(screenshot, dict):
+                        screenshots.append(screenshot.get("path", ""))
+                    elif isinstance(screenshot, str):
+                        screenshots.append(screenshot)
+                
+                test_case = {
+                    "name": test_result.get("name", "Unknown Test"),
+                    "file": test_result.get("file", "Unknown"),
+                    "class": test_result.get("class", "N/A"),
+                    "method": test_result.get("method", "N/A"),
+                    "result": test_result.get("result", "UNKNOWN"),
+                    "duration": test_result.get("duration", 0),
+                    "error": test_result.get("error"),
+                    "steps": steps,
+                    "screenshots": screenshots
+                }
+                test_cases.append(test_case)
+            
+            # Tạo suite data
+            suite_data = {
+                "name": suite_name,
+                "passed": passed,
+                "failed": failed,
+                "skipped": skipped,
+                "total": passed + failed + skipped,
+                "duration": duration,
+                "test_cases": test_cases
+            }
+            
+            return [suite_data]
+            
+        except Exception as e:
+            self.logger.error(f"Failed to prepare Allure-style data: {str(e)}")
+            return []
             
     def _cleanup_suite(self):
         """Cleanup after suite completion."""

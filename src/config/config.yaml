@@ -222,12 +222,12 @@ features:
 
 reports:
   excel:
-    enabled: false
+    enabled: true
     directory: "reports/excel"
     include_screenshots: true
     include_logs: true
   pdf:
-    enabled: false
+    enabled: true
     directory: "reports/pdf"
     include_screenshots: true
     include_logs: true

@@ -446,17 +446,47 @@ class AllureReportGenerator:
                 
             report_dir = self.config_manager.get_allure_report_directory()
             
+            # Ensure directories exist
+            os.makedirs(self.results_dir, exist_ok=True)
+            os.makedirs(report_dir, exist_ok=True)
+            
+            # Check if results directory has any files
+            from pathlib import Path
+            results_path = Path(self.results_dir)
+            if not any(results_path.iterdir()):
+                self.logger.warning(f"No results found in {self.results_dir}. Skipping report generation.")
+                return
+            
             # Generate report using allure command
             import subprocess
             
-            cmd = f"allure generate {self.results_dir} -o {report_dir} --clean"
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            cmd = [
+                "allure", "generate",
+                self.results_dir,
+                "-o", report_dir,
+                "--single-file", "--clean"
+            ]
+            
+            self.logger.info(f"Generating Allure report: {' '.join(cmd)}")
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
             
             if result.returncode == 0:
-                self.logger.info(f"Allure report generated successfully: {report_dir}")
+                report_file = os.path.join(report_dir, "index.html")
+                if os.path.exists(report_file):
+                    self.logger.info(f"Allure report generated successfully: {report_file}")
+                else:
+                    self.logger.warning(f"Report file not found at expected location: {report_file}")
             else:
-                self.logger.error(f"Failed to generate Allure report: {result.stderr}")
+                self.logger.error(f"Failed to generate Allure report (exit code: {result.returncode})")
+                if result.stdout:
+                    self.logger.error(f"stdout: {result.stdout}")
+                if result.stderr:
+                    self.logger.error(f"stderr: {result.stderr}")
                 
+        except FileNotFoundError:
+            self.logger.warning("Allure CLI not found. Install with: scoop install allure")
+        except subprocess.TimeoutExpired:
+            self.logger.error("Report generation timed out after 5 minutes")
         except Exception as e:
             self.logger.log_error(e, "generate_report")
             
