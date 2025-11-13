@@ -1,0 +1,12 @@
+**/.benchmarks
+**/.pytest_cache
+**/__pycache__
+**/.tox
+**/.venv
+**/.vscode
+**/.idea
+**/.tox
+**/.venv
+**/.vscode
+**/.idea
+**/reports

@@ -1,0 +1,100 @@
+# ============================================
+# LEVEL 2: ENVIRONMENT CONFIG (UAT/Staging)
+# ============================================
+# Purpose: UAT environment-specific URLs, credentials, connections
+# Priority: MEDIUM (overrides global, can be overridden by suite > CLI)
+# ============================================
+
+environment: uat
+
+# ============================================
+# APPLICATION URLs (Environment-specific)
+# ============================================
+apps:
+  b2c_web:
+    url: "https://uat.example.com"
+    name: "B2C Web Application (UAT)"
+    description: "UAT environment for B2C web application"
+  
+  b2b_web:
+    url: "https://uat-b2b.example.com"
+    name: "B2B Web Application (UAT)"
+    description: "UAT environment for B2B web application"
+  
+  admin_web:
+    url: "https://uat-admin.example.com"
+    name: "Admin Web Application (UAT)"
+    description: "UAT environment for administrative application"
+  
+  b2c_mobile:
+    url: "https://uat-b2c-mobile.example.com"
+    name: "B2C Mobile Application (UAT)"
+    description: "UAT environment for B2C mobile application"
+  
+  b2b_mobile:
+    url: "https://uat-b2b-mobile.example.com"
+    name: "B2B Mobile Application (UAT)"
+    description: "UAT environment for B2B mobile application"
+
+# ============================================
+# DATABASE CONFIGURATION (Environment-specific)
+# ============================================
+database:
+  host: "uat-db.example.com"
+  port: 5432
+  name: "testdb_uat"
+  username: "uat_user"
+  password: "${UAT_DB_PASSWORD}"  # Must use env var in UAT
+  driver: "org.postgresql.Driver"
+  connection_timeout: 30000
+  query_timeout: 10000
+  connection_pool_size: 10
+
+# ============================================
+# API CONFIGURATION (Environment-specific)
+# ============================================
+api:
+  base_url: "https://uat-api.example.com"
+  version: "v1"
+  timeout: 15000
+  retry_count: 3
+  verify_ssl: true  # UAT should use valid SSL
+  headers:
+    Content-Type: "application/json"
+    Accept: "application/json"
+  auth:
+    api_key: "${UAT_API_KEY}"  # Must use env var
+    secret_key: "${UAT_SECRET_KEY}"  # Must use env var
+
+# ============================================
+# CREDENTIALS (Environment-specific)
+# ============================================
+credentials:
+  admin:
+    username: "${UAT_ADMIN_USERNAME}"  # Use env var
+    password: "${UAT_ADMIN_PASSWORD}"  # Use env var
+    role: "admin"
+  
+  b2c_user:
+    username: "${UAT_USER_USERNAME}"
+    password: "${UAT_USER_PASSWORD}"
+    role: "customer"
+  
+  b2b_user:
+    username: "${UAT_B2B_USERNAME}"
+    password: "${UAT_B2B_PASSWORD}"
+    role: "business"
+
+# ============================================
+# EXTERNAL SERVICES (Environment-specific)
+# ============================================
+external_services:
+  payment_gateway:
+    url: "https://uat-payment.example.com"
+    api_key: "${UAT_PAYMENT_KEY}"
+    test_mode: true
+  
+  sms_service:
+    url: "https://uat-sms.example.com"
+    api_key: "${UAT_SMS_KEY}"
+    test_mode: true

@@ -1,0 +1,97 @@
+# ============================================
+# LEVEL 2: ENVIRONMENT CONFIG (Production)
+# ============================================
+# Purpose: Production environment-specific URLs, credentials, connections
+# Priority: MEDIUM (overrides global, can be overridden by suite > CLI)
+# ⚠️ WARNING: Use environment variables for ALL sensitive data!
+# ============================================
+
+environment: prod
+
+# ============================================
+# APPLICATION URLs (Environment-specific)
+# ============================================
+apps:
+  b2c_web:
+    url: "https://www.example.com"
+    name: "B2C Web Application (Production)"
+    description: "Production environment for B2C web application"
+  
+  b2b_web:
+    url: "https://b2b.example.com"
+    name: "B2B Web Application (Production)"
+    description: "Production environment for B2B web application"
+  
+  admin_web:
+    url: "https://admin.example.com"
+    name: "Admin Web Application (Production)"
+    description: "Production environment for administrative application"
+  
+  b2c_mobile:
+    url: "https://mobile.example.com"
+    name: "B2C Mobile Application (Production)"
+    description: "Production environment for B2C mobile application"
+  
+  b2b_mobile:
+    url: "https://b2b-mobile.example.com"
+    name: "B2B Mobile Application (Production)"
+    description: "Production environment for B2B mobile application"
+
+# ============================================
+# DATABASE CONFIGURATION (Environment-specific)
+# ============================================
+database:
+  host: "${PROD_DB_HOST}"  # Must use env var
+  port: 5432
+  name: "${PROD_DB_NAME}"  # Must use env var
+  username: "${PROD_DB_USERNAME}"  # Must use env var
+  password: "${PROD_DB_PASSWORD}"  # Must use env var
+  driver: "org.postgresql.Driver"
+  connection_timeout: 30000
+  query_timeout: 5000
+  connection_pool_size: 20
+
+# ============================================
+# API CONFIGURATION (Environment-specific)
+# ============================================
+api:
+  base_url: "https://api.example.com"
+  version: "v1"
+  timeout: 10000
+  retry_count: 2  # Less retry in prod
+  verify_ssl: true  # MUST be true in production
+  headers:
+    Content-Type: "application/json"
+    Accept: "application/json"
+  auth:
+    api_key: "${PROD_API_KEY}"  # Must use env var
+    secret_key: "${PROD_SECRET_KEY}"  # Must use env var
+
+# ============================================
+# CREDENTIALS (Environment-specific)
+# ============================================
+# ⚠️ WARNING: ALL credentials MUST use environment variables!
+credentials:
+  admin:
+    username: "${PROD_ADMIN_USERNAME}"
+    password: "${PROD_ADMIN_PASSWORD}"
+    role: "admin"
+  
+  test_user:
+    username: "${PROD_TEST_USERNAME}"
+    password: "${PROD_TEST_PASSWORD}"
+    role: "customer"
+
+# ============================================
+# EXTERNAL SERVICES (Environment-specific)
+# ============================================
+external_services:
+  payment_gateway:
+    url: "https://payment.example.com"
+    api_key: "${PROD_PAYMENT_KEY}"
+    test_mode: false  # Real transactions in prod
+  
+  sms_service:
+    url: "https://sms.example.com"
+    api_key: "${PROD_SMS_KEY}"
+    test_mode: false

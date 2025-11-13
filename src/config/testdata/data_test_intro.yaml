@@ -1,0 +1,5 @@
+data_test_intro:
+  - test_id: "TC_COLOR_001"
+    test_name: "Skip intro and verify empty notes"
+    description: "Verify that after skipping intro, home page shows 0 notes"
+    expected_notes: 0

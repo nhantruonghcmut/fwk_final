@@ -1,0 +1,111 @@
+  data_test_signup:
+    - test_id: "signup_001"
+      test_name: "Valid signup with all required fields"
+      signup_email: "testuser001@vdvd123.gh"
+      signup_name: "Test User 001"
+      form_data:
+        Title: "Mr."
+        Name: "Test User 001"
+        Password: "Test@123456"
+        DOB: ["15", "5", "1990"]
+        FirstName: "Test"
+        LastName: "User001"
+        Company: "Test Company Ltd"
+        Address:
+          Add1: "123 Test Street"
+          Add2: "Apartment 4B"
+          Country: "United States"
+          State: "California"
+          City: "Los Angeles"
+          Code: "90001"
+        Phone: "+1234567890"
+      expected_result: "success"
+      
+    - test_id: "signup_002"
+      test_name: "Valid signup with Mrs title"
+      signup_email: "testdfuser00122@vdvd123.gh"
+      signup_name: "Jane Na Smith"
+      form_data:
+        Title: "Mrs."
+        Name: "Jane Na Smith"
+        Password: "Test@123456"
+        DOB: ["25", "12", "1985"]
+        FirstName: "Jane"
+        LastName: "Smith"
+        Company: "ABC Corporation"
+        Address:
+          Add1: "456 Main Avenue"
+          Add2: "Suite 100"
+          Country: "Canada"
+          State: "Ontario"
+          City: "Toronto"
+          Code: "M5H 2N2"
+        Phone: "+1416555000"
+      expected_result: "success"
+      
+    - test_id: "signup_003"
+      test_name: "Valid signup with minimal company info"
+      signup_email: "testusefrr003@vdvd123.gh"
+      signup_name: "Michael HT Johnson"
+      form_data:
+        Title: "Mr."
+        Name: "Michael HT Johnson"
+        Password: "Test@123456"
+        DOB: ["10", "8", "1992"]
+        FirstName: "Michael"
+        LastName: "Johnson"
+        Company: "Freelancer"
+        Address:
+          Add1: "789 Oak Road"
+          Add2: ""
+          Country: "India"
+          State: "Maharashtra"
+          City: "Mumbai"
+          Code: "400001"
+        Phone: "+919876543210"
+      expected_result: "success"
+      
+    - test_id: "signup_004"
+      test_name: "Valid signup with UK address"
+      signup_email: "testuserfg004@vdvd123.gh"
+      signup_name: "Sarah NT Williams"
+      form_data:
+        Title: "Mrs."
+        Name: "Sarah NT Williams"
+        Password: "Test@123456"
+        DOB: ["5", "3", "1988"]
+        FirstName: "Sarah"
+        LastName: "Williams"
+        Company: "Tech Solutions UK"
+        Address:
+          Add1: "10 Downing Street"
+          Add2: "Floor 2"
+          Country: "India"
+          State: "TGHT"
+          City: "Mumbai"
+          Code: "SW1A 2AA"
+        Phone: "+442071234567"
+      expected_result: "success"
+      
+    # - test_id: "signup_005"
+    #   test_name: "Valid signup with Australian address"
+    #   signup_email: "testuser005fd@vdvd123.gh"
+    #   signup_name: "David Brown HJ"
+    #   form_data:
+    #     Title: "Mr."
+    #     Name: "David Brown HJ"
+    #     Password: "Test@123456"
+    #     DOB: ["20", "11", "1995"]
+    #     FirstName: "David"
+    #     LastName: "Brown"
+    #     Company: "Sydney Tech Hub"
+    #     Address:
+    #       Add1: "88 George Street"
+    #       Add2: "Level 5"
+    #       Country: "Australia"
+    #       State: "New South Wales"
+    #       City: "Sydney"
+    #       Code: "2000"
+    #     Phone: "+61298765432"
+    #   expected_result: "success"
+  

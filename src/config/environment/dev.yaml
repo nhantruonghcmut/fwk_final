@@ -1,0 +1,117 @@
+# ============================================
+# LEVEL 2: ENVIRONMENT CONFIG (Development)
+# ============================================
+# Purpose: Environment-specific URLs, credentials, connections
+# Priority: MEDIUM (overrides global, can be overridden by suite > CLI)
+# ============================================
+
+environment: dev
+
+# ============================================
+# APPLICATION URLs (Environment-specific)
+# ============================================
+apps:
+  automation_excercise:
+    url: "https://automationexercise.com"
+    name: "Automation Exercise"
+    description: "Automation Exercise - Practice automation testing website"
+  b2c_web:
+    url: "https://dev-b2c.example.com"
+    name: "Automation Exercise"
+    description: "Automation Exercise - Practice automation testing website"
+
+  b2b_web:
+    url: "https://dev-b2b.example.com"
+    name: "B2B Web Application"
+    description: "Business to Business web application"
+  
+  admin_web:
+    url: "https://dev-admin.example.com"
+    name: "Admin Web Application"
+    description: "Administrative web application"
+  
+  b2c_mobile:
+    url: "https://dev-b2c-mobile.example.com"
+    name: "B2C Mobile Application"
+    description: "Business to Consumer mobile application"
+  
+  b2b_mobile:
+    url: "https://dev-b2b-mobile.example.com"
+    name: "B2B Mobile Application"
+    description: "Business to Business mobile application"
+
+# ============================================
+# DATABASE CONFIGURATION (Environment-specific)
+# ============================================
+database:
+  host: "dev-db.example.com"
+  port: 3306
+  name: "testdb"
+  username: "testuser"
+  password: "testpass"  # Use ${DB_PASSWORD} for env var
+  driver: "com.mysql.cj.jdbc.Driver"
+  connection_timeout: 30000
+  query_timeout: 10000
+  connection_pool_size: 5
+
+# ============================================
+# API CONFIGURATION (Environment-specific)
+# ============================================
+api:
+  base_url: "https://dev-api.example.com"
+  version: "v1"
+  timeout: 10000
+  retry_count: 3
+  verify_ssl: false  # Dev can use self-signed cert
+  headers:
+    Content-Type: "application/json"
+    Accept: "application/json"
+  auth:
+    api_key: "dev-api-key-12345"  # Use ${API_KEY} for env var
+    secret_key: "dev-secret-key-67890"  # Use ${SECRET_KEY} for env var
+
+# ============================================
+# CREDENTIALS (Environment-specific)
+# ============================================
+credentials:
+  admin:
+    username: "admin@dev.example.com"
+    password: "admin123"  # Use ${ADMIN_PASSWORD} for env var
+    role: "admin"
+  
+  b2c_user:
+    username: "user@dev.example.com"
+    password: "user123"  # Use ${USER_PASSWORD} for env var
+    role: "customer"
+  
+  b2b_user:
+    username: "business@dev.example.com"
+    password: "business123"  # Use ${B2B_PASSWORD} for env var
+    role: "business"
+  
+  email:
+    username: "test@dev.example.com"
+    password: "emailpass123"  # Use ${EMAIL_PASSWORD} for env var
+  
+  social_login:
+    google_client_id: "dev-google-client-id"
+    facebook_app_id: "dev-facebook-app-id"
+
+# ============================================
+# EXTERNAL SERVICES (Environment-specific)
+# ============================================
+external_services:
+  payment_gateway:
+    url: "https://sandbox-payment.example.com"
+    api_key: "dev-payment-key"
+    test_mode: true
+  
+  sms_service:
+    url: "https://dev-sms.example.com"
+    api_key: "dev-sms-key"
+    test_mode: true
+  
+  email_service:
+    url: "https://dev-email.example.com"
+    api_key: "dev-email-key"
+    test_mode: true

@@ -1,0 +1,29 @@
+web:
+  platform: "web"
+  
+  parallel:
+    enabled: true
+    workers: 2  # Override for web
+    distribution: "load"  # Web không cần group
+  
+  browsers:
+    default: ["chromium", "firefox"]
+    
+    chromium:
+      headless: false
+      slow_mo: 0
+      args:
+        - "--disable-blink-features=AutomationControlled"
+    
+    firefox:
+      headless: false
+      slow_mo: 0
+  
+  timeouts:
+    default: 30000
+    page_load: 30000
+    navigation: 30000
+  
+  retry:
+    count: 3
+    delay: 1000

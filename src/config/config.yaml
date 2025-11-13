@@ -1,0 +1,233 @@
+# ============================================
+# LEVEL 1: GLOBAL CONFIG (Framework Defaults)
+# ============================================
+# Purpose: Framework-wide settings, DO NOT change between environments
+# Priority: LOWEST (can be overridden by environment > suite > CLI)
+# ============================================
+
+# Framework metadata
+framework:
+  name: "WebMobileFwk"
+  version: "1.0.0"
+  description: "Web & Mobile Test Automation Framework"
+
+# Default environment (can override via CLI: --env=uat)
+default_environment: dev
+
+# ============================================
+# PYTEST CONFIGURATION (from pytest.ini)
+# ============================================
+pytest:
+  # Test discovery
+  test_discovery:
+    testpaths: ["tests"]
+    python_files: ["test_*.py", "*_test.py"]
+    python_classes: ["Test*"]
+    python_functions: ["test_*"]
+  
+  # Test execution
+  execution:
+    strict_markers: false
+    strict_config: false
+    verbose: true
+    traceback: "short"
+    show_durations: 10
+    maxfail: 5
+    disable_warnings: false
+    
+  # Test collection
+  collection:
+    norecursedirs:
+      - ".git"
+      - ".tox"
+      - "dist"
+      - "build"
+      - "__pycache__"
+      - ".pytest_cache"
+      - "venv"
+      - "env"
+      - "node_modules"
+    collect_ignore: []
+  
+  # Test timeout
+  timeout:
+    value: 300  # seconds
+    method: "process"
+  
+  # ============================================
+  # PYTEST BUILT-IN LOGGING
+  # ============================================
+  # Purpose: Configure pytest's native logging system
+  # Used by: pytest --log-cli-level, --log-file, etc.
+  # Scope: Test execution output and pytest's internal logs
+  logging:
+    cli:
+      enabled: true
+      level: "INFO"
+      format: "%(asctime)s [%(levelname)8s] %(name)s: %(message)s"
+      date_format: "%Y-%m-%d %H:%M:%S"
+    
+    file:
+      enabled: true
+      path: "reports/logs/pytest.log"
+      level: "DEBUG"
+      format: "%(asctime)s [%(levelname)8s] %(filename)s:%(lineno)d %(funcName)s(): %(message)s"
+      date_format: "%Y-%m-%d %H:%M:%S"   
+
+
+# ============================================
+# EXECUTION SETTINGS
+# ============================================
+parallel: # default setting, maybe overwrite by platform config (web/mobile)
+  enabled: true
+  workers: 4
+
+
+# ============================================
+# TIMEOUT CONFIGURATIONS (Framework Defaults)
+# ============================================
+timeouts:
+  default: 30000
+  element: 10000
+  page_load: 30000
+  navigation: 30000
+  api_call: 10000
+  database_query: 5000
+
+# Retry configuration (framework default)
+retry:
+  count: 3
+  delay: 1000
+  exponential_backoff: true
+
+# ============================================
+# SCREENSHOT CONFIGURATION
+# ============================================
+screenshots:
+  on_failure: true
+  on_success: false
+  on_step: false
+  directory: "reports/screenshots"
+  format: "png"
+  quality: 95
+
+
+# ============================================
+# MARKERS CONFIGURATION (SINGLE SOURCE OF TRUTH)
+# ============================================
+# Maps pytest markers to test data files and platform settings
+markers:
+  automation_exercise: "sample test"
+  colorApp: "Color App tests"
+  smoke: "Smoke tests"
+
+# ============================================
+# REPORTING CONFIGURATION
+# ============================================
+allure:
+  enabled: true
+  results_dir: "reports/allure-results"
+  report_dir: "reports/allure-report"
+  allure_config: "allure-config"
+  clean_on_start: true  
+  title: "Test Automation Report"
+  description: "Automated test execution report for web and mobile applications"
+  environment_file: true
+  categories_file: true
+  executor_file: true
+
+
+# Browser context configuration (common settings)
+context:
+  viewport:
+    width: 1920
+    height: 1080
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  locale: "en-US"
+  timezone_id: "America/New_York"
+  permissions: ["geolocation", "notifications"]
+  extra_http_headers:
+    Accept-Language: "en-US,en;q=0.9"
+
+
+# Test data configuration
+test_data:
+  # data_test_signup: "testdata/data_test_signup.yaml"
+  # data_test_login: "testdata/data_test_login.yaml"
+  # data_test_delete: "testdata/data_test_delete.yaml"
+  # cart_test_data: "testdata/cart_and_product_testdata.yaml"
+  # view_search_test_data: "testdata/cart_and_product_testdata.yaml"
+  # review_test_data: "testdata/cart_and_product_testdata.yaml"
+  # purchase_test_data: "testdata/cart_and_product_testdata.yaml"
+  colorNote_testsuite_A: "testdata/colorNote_testsuite_A.yaml"
+
+
+# ============================================
+# FRAMEWORK LOGGING CONFIGURATION
+# ============================================
+# Purpose: Configure framework's custom ReportLogger
+# Used by: ReportLogger class, test listeners, utilities
+# Scope: Framework-level logging with error files, etc.
+# Note: This is separate from pytest's logging and more feature-rich
+logging:
+  # Console logging
+  console:
+    enabled: true
+    level: "INFO"
+    format: "simple"  # simple | detailed | json
+  
+  # File logging
+  file:
+    enabled: true
+    level: "DEBUG"
+    directory: "reports/logs"
+    format: "detailed"  # simple | detailed | json
+    max_size: 10485760  # 10MB
+    backup_count: 5
+    encoding: "utf-8"
+  
+  # Error file (separate file for errors only)
+  error_file:
+    enabled: true
+    level: "ERROR"
+    directory: "reports/logs"
+    format: "detailed"
+    max_size: 5242880  # 5MB
+    backup_count: 3
+    encoding: "utf-8"
+  
+  # Log formatters
+  formatters:
+    simple:
+      format: "%(asctime)s - %(levelname)s - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S"
+    
+    detailed:
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S"
+    
+    json:
+      format: '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s"}'
+      datefmt: "%Y-%m-%d %H:%M:%S"
+
+# ============================================
+# FEATURE TOGGLES (Framework-level)
+# ============================================
+features:
+  performance_monitoring: false
+  security_testing: false
+  api_testing: false
+  database_testing: false
+
+
+reports:
+  excel:
+    enabled: false
+    directory: "reports/excel"
+    include_screenshots: true
+    include_logs: true
+  pdf:
+    enabled: false
+    directory: "reports/pdf"
+    include_screenshots: true
+    include_logs: true

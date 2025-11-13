@@ -1,0 +1,59 @@
+# Test data for Automation Exercise Test Cases 12, 13, 19, 20, 21, 24
+
+cart_test_data:
+  - test_id: "cart_001"
+    test_name: "Add products to cart from home page"
+    products_to_add:
+      - name: "Blue Top"
+        quantity: 1
+      - name: "Men Tshirt"
+        quantity: 1
+    expected_cart_count: 2
+    expected_result: "success"
+    
+  - test_id: "cart_002"
+    test_name: "Add multiple quantities of same product"
+    products_to_add:
+      - name: "Blue Top"
+        quantity: 3
+    expected_cart_count: 1
+    expected_total_quantity: 3
+    expected_result: "success"
+
+view_search_test_data:
+  - test_id: "view_search_001"
+    test_name: "View all products and search for specific product"
+    search_term: "Blue Top"
+    expected_search_results: 1
+    expected_result: "success"
+    
+  - test_id: "view_search_002"
+    test_name: "Search for non-existent product"
+    search_term: "NonExistentProduct"
+    expected_search_results: 0
+    expected_result: "success"
+
+review_test_data:
+  - test_id: "review_001"
+    test_name: "Add review to product"
+    product_name: "Blue Top"
+    review_data:
+      name: "Test Reviewer"
+      email: "reviewer@test.com"
+      review_text: "This is a great product! Highly recommended."
+    expected_result: "success"
+
+purchase_test_data:
+  - test_id: "purchase_001"
+    test_name: "Complete purchase and download invoice"
+    products_to_purchase:
+      - name: "Blue Top"
+        quantity: 1
+    payment_data:
+      name_on_card: "Test User"
+      card_number: "4111111111111111"
+      cvc: "123"
+      expiry_month: "12"
+      expiry_year: "2025"
+    comment: "Please deliver as soon as possible"
+    expected_result: "success"

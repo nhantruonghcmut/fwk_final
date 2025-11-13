@@ -1,0 +1,64 @@
+data_test_add_textnote:
+  - test_id: "TC001_TEXTNOTE_001"
+    test_name: "Create text note and verify"
+    description: "Create a text note with title and body, verify note count is 1"
+    note_type: "text"
+    notes:
+      - title: "Test Note Title"
+        body: "This is test note body content"
+    expected_notes: 1
+
+  - test_id: "TC001_TEXTNOTE_002"
+    test_name: "Create text note and verify"
+    description: "Create a text note with title and body, verify note count is 1"
+    note_type: "text"
+    notes:
+      - title: "Test Note Title 01"
+        body: "This is test note body content of Note 01"
+      - title: "Test Note Title 02"
+        body: "This is test note body content of Note 02"
+    expected_notes: 2
+
+data_test_add_checklistnote:
+  - test_id: "TC002_CHECKLIST_001"
+    test_name: "Create checklist note with items"
+    description: "Create checklist note with title and 2 items, verify items and note count"
+    note_type: "checklist"
+    title: "Test Checklist"
+    items:
+      - "First checklist item"
+      - "Second checklist item"
+    expected_items: 2
+    expected_notes: 1
+
+  - test_id: "TC002_CHECKLIST_002"
+    test_name: "Create checklist note with items"
+    description: "Create checklist note with title and 2 items, verify items and note count"
+    note_type: "checklist"
+    title: "Test Checklist"
+    items:
+      - "Third checklist item"
+      - "Fourth checklist item"
+      - "Fifth checklist item"
+    expected_items: 3
+    expected_notes: 1
+
+data_test_colornote_complex:
+  - test_id: "TC003_COMPLEX_001"
+    test_name: "Complex action in ColorNote"
+    description: "Create checklist note with title and 4 items, verify items ; delete 2 items and verify items; verify note count; create text note with title and body, verify note count; delete note, verify note count"
+    title_textnote: "checklist"
+    title_checklistnote: "This is Checklist"
+    items:
+      - "First checklist item"
+      - "Second checklist item"
+      - "Third checklist item"
+      - "Fourth checklist item"
+    items_last: "Last checklist item"
+    title_textnote: "Test Note Title"
+    body_textnote: "This is test note body content"
+    expected_items_1st: 4
+    expected_items_2nd: 2
+    expected_notes_1st: 1
+    expected_notes_2nd: 2
+    expected_notes_3rd: 1

@@ -1,0 +1,368 @@
+# Automation Exercise Test Data
+# Test data for signup, login, signout, and delete account tests
+
+automation_exercise_testdata:
+  # Test data for signup tests (5 samples)
+  signup_test_data:
+    - test_id: "signup_001"
+      test_name: "Valid signup with all required fields"
+      signup_email: "testuser001@vdvd123.gh"
+      signup_name: "Test User 001"
+      form_data:
+        Title: "Mr."
+        Name: "Test User 001"
+        Password: "Test@123456"
+        DOB: ["15", "5", "1990"]
+        FirstName: "Test"
+        LastName: "User001"
+        Company: "Test Company Ltd"
+        Address:
+          Add1: "123 Test Street"
+          Add2: "Apartment 4B"
+          Country: "United States"
+          State: "California"
+          City: "Los Angeles"
+          Code: "90001"
+        Phone: "+1234567890"
+      expected_result: "success"
+      
+    # - test_id: "signup_002"
+    #   test_name: "Valid signup with Mrs title"
+    #   signup_email: "testdfuser00122@vdvd123.gh"
+    #   signup_name: "Jane Na Smith"
+    #   form_data:
+    #     Title: "Mrs."
+    #     Name: "Jane Na Smith"
+    #     Password: "Test@123456"
+    #     DOB: ["25", "12", "1985"]
+    #     FirstName: "Jane"
+    #     LastName: "Smith"
+    #     Company: "ABC Corporation"
+    #     Address:
+    #       Add1: "456 Main Avenue"
+    #       Add2: "Suite 100"
+    #       Country: "Canada"
+    #       State: "Ontario"
+    #       City: "Toronto"
+    #       Code: "M5H 2N2"
+    #     Phone: "+1416555000"
+    #   expected_result: "success"
+      
+    # - test_id: "signup_003"
+    #   test_name: "Valid signup with minimal company info"
+    #   signup_email: "testusefrr003@vdvd123.gh"
+    #   signup_name: "Michael HT Johnson"
+    #   form_data:
+    #     Title: "Mr."
+    #     Name: "Michael HT Johnson"
+    #     Password: "Test@123456"
+    #     DOB: ["10", "8", "1992"]
+    #     FirstName: "Michael"
+    #     LastName: "Johnson"
+    #     Company: "Freelancer"
+    #     Address:
+    #       Add1: "789 Oak Road"
+    #       Add2: ""
+    #       Country: "India"
+    #       State: "Maharashtra"
+    #       City: "Mumbai"
+    #       Code: "400001"
+    #     Phone: "+919876543210"
+    #   expected_result: "success"
+      
+    # - test_id: "signup_004"
+    #   test_name: "Valid signup with UK address"
+    #   signup_email: "testuserfg004@vdvd123.gh"
+    #   signup_name: "Sarah NT Williams"
+    #   form_data:
+    #     Title: "Mrs."
+    #     Name: "Sarah NT Williams"
+    #     Password: "Test@123456"
+    #     DOB: ["5", "3", "1988"]
+    #     FirstName: "Sarah"
+    #     LastName: "Williams"
+    #     Company: "Tech Solutions UK"
+    #     Address:
+    #       Add1: "10 Downing Street"
+    #       Add2: "Floor 2"
+    #       Country: "India"
+    #       State: "TGHT"
+    #       City: "Mumbai"
+    #       Code: "SW1A 2AA"
+    #     Phone: "+442071234567"
+    #   expected_result: "success"
+      
+    # - test_id: "signup_005"
+    #   test_name: "Valid signup with Australian address"
+    #   signup_email: "testuser005fd@vdvd123.gh"
+    #   signup_name: "David Brown HJ"
+    #   form_data:
+    #     Title: "Mr."
+    #     Name: "David Brown HJ"
+    #     Password: "Test@123456"
+    #     DOB: ["20", "11", "1995"]
+    #     FirstName: "David"
+    #     LastName: "Brown"
+    #     Company: "Sydney Tech Hub"
+    #     Address:
+    #       Add1: "88 George Street"
+    #       Add2: "Level 5"
+    #       Country: "Australia"
+    #       State: "New South Wales"
+    #       City: "Sydney"
+    #       Code: "2000"
+    #     Phone: "+61298765432"
+    #   expected_result: "success"
+
+  # Test data for login tests (5 samples)
+  # Uses same credentials from signup_test_data
+  login_test_data:
+    - test_id: "login_001"
+      test_name: "Valid login with correct credentials"
+      email: "testuser001@vdvd123.gh"
+      password: "Test@123456"
+      username: "Test User 001"
+      expected_result: "success"
+      
+    - test_id: "login_002"
+      test_name: "Valid login with second user"
+      email: "testdfuser00122@vdvd123.gh"
+      password: "Test@123456"
+      username: "Jane Na Smith"
+      expected_result: "success"
+      
+    - test_id: "login_003"
+      test_name: "Valid login with third user"
+      email: "testusefrr003@vdvd123.gh"
+      password: "Test@123456"
+      username: "Michael HT Johnson"
+      expected_result: "success"
+      
+    - test_id: "login_004"
+      test_name: "Valid login with fourth user"
+      email: "testuserfg004@vdvd123.gh"
+      password: "Test@123456"
+      username: "Sarah NT Williams"
+      expected_result: "success"
+      
+    - test_id: "login_005"
+      test_name: "Valid login with fifth user"
+      email: "testuser005fd@vdvd123.gh"
+      password: "Test@123456"
+      username: "David Brown HJ"
+      expected_result: "success"
+
+  # Test data for signout tests (5 samples)
+  # Uses same credentials from signup_test_data
+  signout_test_data:
+    - test_id: "signout_001"
+      test_name: "Valid signout after login"
+      email: "testuser001@vdvd123.gh"
+      password: "Test@123456"
+      username: "Test User 001"
+      expected_result: "success"
+      
+    - test_id: "signout_002"
+      test_name: "Valid signout with second user"
+      email: "testdfuser00122@vdvd123.gh"
+      password: "Test@123456"
+      username: "Jane Na Smith"
+      expected_result: "success"
+      
+    - test_id: "signout_003"
+      test_name: "Valid signout with third user"
+      email: "testusefrr003@vdvd123.gh"
+      password: "Test@123456"
+      username: "Michael HT Johnson"
+      expected_result: "success"
+      
+    - test_id: "signout_004"
+      test_name: "Valid signout with fourth user"
+      email: "testuserfg004@vdvd123.gh"
+      password: "Test@123456"
+      username: "Sarah NT Williams"
+      expected_result: "success"
+      
+    - test_id: "signout_005"
+      test_name: "Valid signout with fifth user"
+      email: "testuser005fd@vdvd123.gh"
+      password: "Test@123456"
+      username: "David Brown HJ"
+      expected_result: "success"
+
+  # Test data for delete account tests (5 samples)
+  # Uses same data structure as signup_test_data for consistency
+  delete_account_test_data:
+    - test_id: "delete_001"
+      test_name: "Delete account after successful signup"
+      signup_email: "testuser001@vdvd123.gh"
+      signup_name: "Test User 001"
+      form_data:
+        Title: "Mr."
+        Name: "Test User 001"
+        Password: "Test@123456"
+        DOB: ["15", "5", "1990"]
+        FirstName: "Test"
+        LastName: "User001"
+        Company: "Test Company Ltd"
+        Address:
+          Add1: "123 Test Street"
+          Add2: "Apartment 4B"
+          Country: "United States"
+          State: "California"
+          City: "Los Angeles"
+          Code: "90001"
+        Phone: "+1234567890"
+      expected_result: "success"
+      
+    - test_id: "delete_002"
+      test_name: "Delete account with second test user"
+      signup_email: "testdfuser00122@vdvd123.gh"
+      signup_name: "Jane Na Smith"
+      form_data:
+        Title: "Mrs."
+        Name: "Jane Na Smith"
+        Password: "Test@123456"
+        DOB: ["25", "12", "1985"]
+        FirstName: "Jane"
+        LastName: "Smith"
+        Company: "ABC Corporation"
+        Address:
+          Add1: "456 Main Avenue"
+          Add2: "Suite 100"
+          Country: "Canada"
+          State: "Ontario"
+          City: "Toronto"
+          Code: "M5H 2N2"
+        Phone: "+1416555000"
+      expected_result: "success"
+      
+    - test_id: "delete_003"
+      test_name: "Delete account with third test user"
+      signup_email: "testusefrr003@vdvd123.gh"
+      signup_name: "Michael HT Johnson"
+      form_data:
+        Title: "Mr."
+        Name: "Michael HT Johnson"
+        Password: "Test@123456"
+        DOB: ["10", "8", "1992"]
+        FirstName: "Michael"
+        LastName: "Johnson"
+        Company: "Freelancer"
+        Address:
+          Add1: "789 Oak Road"
+          Add2: ""
+          Country: "India"
+          State: "Maharashtra"
+          City: "Mumbai"
+          Code: "400001"
+        Phone: "+919876543210"
+      expected_result: "success"
+      
+    - test_id: "delete_004"
+      test_name: "Delete account with fourth test user"
+      signup_email: "testuserfg004@vdvd123.gh"
+      signup_name: "Sarah NT Williams"
+      form_data:
+        Title: "Mrs."
+        Name: "Sarah NT Williams"
+        Password: "Test@123456"
+        DOB: ["5", "3", "1988"]
+        FirstName: "Sarah"
+        LastName: "Williams"
+        Company: "Tech Solutions UK"
+        Address:
+          Add1: "10 Downing Street"
+          Add2: "Floor 2"
+          Country: "India"
+          State: "TGHT"
+          City: "Mumbai"
+          Code: "SW1A 2AA"
+        Phone: "+442071234567"
+      expected_result: "success"
+      
+    - test_id: "delete_005"
+      test_name: "Delete account with fifth test user"
+      signup_email: "testuser005fd@vdvd123.gh"
+      signup_name: "David Brown HJ"
+      form_data:
+        Title: "Mr."
+        Name: "David Brown HJ"
+        Password: "Test@123456"
+        DOB: ["20", "11", "1995"]
+        FirstName: "David"
+        LastName: "Brown"
+        Company: "Sydney Tech Hub"
+        Address:
+          Add1: "88 George Street"
+          Add2: "Level 5"
+          Country: "Australia"
+          State: "New South Wales"
+          City: "Sydney"
+          Code: "2000"
+        Phone: "+61298765432"
+      expected_result: "success"
+
+  # ============================================
+  # LEVEL 3: SUITE CONFIG (Test-specific Overrides)
+  # ============================================
+  # Purpose: Suite-specific config overrides and metadata
+  # Priority: HIGHEST (overrides environment and global configs)
+  # ============================================
+  
+  suite_config:
+    # Suite metadata
+    metadata:
+      owner: "QA Automation Team"
+      priority: "High"
+      tags: ["smoke", "regression", "e2e", "signup-flow"]
+      jira_tickets: ["AUTO-101", "AUTO-102"]
+      estimated_duration: 300  # 5 minutes per test
+      description: "Automation Exercise test suite for user signup/login/logout flows"
+    
+    # ⚠️ OVERRIDE: Base URL (if different from environment)
+    base_url: "https://automationexercise.com"
+    
+    # ⚠️ OVERRIDE: Timeouts (this site needs longer timeouts)
+    timeouts:
+      default: 45000  # Override: Site slower than framework default
+      element: 15000  # Override: Elements take longer to appear
+      page_load: 60000  # Override: Pages load slowly
+      navigation: 45000
+    
+    # ⚠️ OVERRIDE: Browser settings (suite-specific)
+    browser:
+      types: ["chromium", "firefox"] 
+      slow_mo: 0  # Set to 500 for demo/debug
+      viewport:
+        width: 1920
+        height: 1080
+      headless: false  # Comment to use global setting
+    
+    # ⚠️ OVERRIDE: Screenshot settings (capture more for this suite)
+    screenshots:
+      on_failure: true
+      on_success: false  # Set to true for demo
+      on_step: false  # Set to true for step-by-step capture
+      directory: "reports/screenshots/automation_exercise"
+    
+    # ⚠️ OVERRIDE: Retry configuration (suite-specific)
+    retry:
+      count: 2  # Override: Reduce retry for stable tests
+      delay: 1000
+      exponential_backoff: false
+    
+    # ⚠️ OVERRIDE: Execution settings
+    execution:
+      parallel: false  # Override: Run sequential for this suite
+      max_concurrent: 1
+      wait_after_navigation: 2000  # Wait 2s after each navigation
+      auto_accept_cookies: true
+      clear_cache_before_test: false
+    
+    # Suite-specific settings
+    suite_settings:
+      auto_delete_created_accounts: false  # Keep accounts for debugging
+      capture_network_logs: false
+      capture_console_logs: false
+      enable_video_recording: false

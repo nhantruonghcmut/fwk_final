@@ -1,0 +1,71 @@
+# src/config/mobile_config.yaml
+mobile:
+  platform: "mobile"
+  
+  parallel:
+    enabled: true
+    workers: 2  # Override for mobile
+    distribution: "loadgroup"  # Mobile cần group theo device
+  
+  devices:
+  - device_name: "emulator-5554"
+    platform_name: "Android"
+    platform_version: "11"
+    automation_name: "UiAutomator2"
+    udid: "emulator-5554"
+    no_reset: false
+    full_reset: false
+    new_command_timeout: 300
+    app_package: "com.socialnmobile.dictapps.notepad.color.note"
+    app_activity: "com.socialnmobile.dictapps.notepad.color.note/com.socialnmobile.colornote.activity.Main"
+  
+  - device_name: "emulator-5556"
+    platform_name: "Android"
+    platform_version: "11"
+    automation_name: "UiAutomator2"
+    udid: "emulator-5556"
+    no_reset: false
+    full_reset: false
+    new_command_timeout: 300
+    app_package: "com.socialnmobile.dictapps.notepad.color.note"
+    app_activity: "com.socialnmobile.dictapps.notepad.color.note/com.socialnmobile.colornote.activity.Main"
+
+
+  # - device_name: "emulator-5558"
+  #   platform_name: "Android"
+  #   platform_version: "11"
+  #   automation_name: "UiAutomator2"
+  #   udid: "emulator-5558"
+  #   no_reset: false
+  #   full_reset: false
+  #   new_command_timeout: 300
+  #   app_package: "com.socialnmobile.dictapps.notepad.color.note"
+  #   app_activity: "com.socialnmobile.dictapps.notepad.color.note/com.socialnmobile.colornote.activity.Main"
+
+  # - device_name: "emulator-5560"
+  #   platform_name: "Android"
+  #   platform_version: "11"
+  #   automation_name: "UiAutomator2"
+  #   udid: "emulator-5560"
+  #   no_reset: false
+  #   full_reset: false
+  #   new_command_timeout: 300
+  #   app_package: "com.socialnmobile.dictapps.notepad.color.note"
+  #   app_activity: "com.socialnmobile.dictapps.notepad.color.note/com.socialnmobile.colornote.activity.Main"
+
+  # - device_name: "iPhone 13"
+  #   platform_name: "iOS"
+  #   platform_version: "15.0"
+  #   udid: "auto"
+  #   automation_name: "XCUITest"
+  #   no_reset: false
+  #   full_reset: false
+  
+  timeouts:
+    default: 45000  # Mobile thường cần timeout lâu hơn
+    element: 15000
+    app_launch: 60000
+  
+  retry:
+    count: 2  # Mobile ít retry hơn
+    delay: 2000

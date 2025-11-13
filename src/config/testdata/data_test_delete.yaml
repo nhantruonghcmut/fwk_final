@@ -1,0 +1,45 @@
+  data_test_delete:
+      - test_id: "delete_001"
+        test_name: "Valid login with correct credentials"
+        email: "testuser001@vdvd123.gh"
+        password: "Test@123456"
+        username: "Test User 001"
+        expected_result: "success"
+
+      - test_id: "delete_002"
+        test_name: "Valid login with second user"
+        email: "testdfuser00122@vdvd123.gh"
+        password: "Test@123456"
+        username: "Jane Na Smith"
+        expected_result: "success"
+
+      - test_id: "delete_003"
+        test_name: "Valid login with third user"
+        email: "testusefrr003@vdvd123.gh"
+        password: "Test@123456"
+        username: "Michael HT Johnson"
+        expected_result: "success"
+
+      - test_id: "delete_004"
+        test_name: "Valid login with fourth user"
+        email: "testuserfg004@vdvd123.gh"
+        password: "Test@123456"
+        username: "Sarah NT Williams"
+        expected_result: "success"
+
+      # - test_id: "delete_005"
+      #   test_name: "Invalid login"
+      #   email: "invaliduser@vdvd123.gh"
+      #   password: "InvalidPassword"
+      #   username: "Invalid User"
+      #   expected_result: "Your email or password is incorrect!"
+
+
+
+
+      # - test_id: "delete_005"
+      #   test_name: "Valid login with fifth user"
+      #   email: "testuser005fd@vdvd123.gh"
+      #   password: "Test@123456"
+      #   username: "David Brown HJ"
+      #   expected_result: "success"
