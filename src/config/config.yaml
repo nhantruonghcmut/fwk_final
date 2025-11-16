@@ -47,6 +47,7 @@ pytest:
       - "venv"
       - "env"
       - "node_modules"
+      - "src"  # Ignore framework source code (not test code)
     collect_ignore: []
   
   # Test timeout
@@ -73,6 +74,8 @@ pytest:
       level: "DEBUG"
       format: "%(asctime)s [%(levelname)8s] %(filename)s:%(lineno)d %(funcName)s(): %(message)s"
       date_format: "%Y-%m-%d %H:%M:%S"   
+      clean_on_start: true # will clear previous log files on start
+      encoding: "utf-8"
 
 
 # ============================================
@@ -98,7 +101,6 @@ timeouts:
 retry:
   count: 3
   delay: 1000
-  exponential_backoff: true
 
 # ============================================
 # SCREENSHOT CONFIGURATION
@@ -106,10 +108,7 @@ retry:
 screenshots:
   on_failure: true
   on_success: false
-  on_step: false
   directory: "reports/screenshots"
-  format: "png"
-  quality: 95
 
 
 # ============================================
@@ -128,13 +127,7 @@ allure:
   enabled: true
   results_dir: "reports/allure-results"
   report_dir: "reports/allure-report"
-  allure_config: "allure-config"
-  clean_on_start: true  
-  title: "Test Automation Report"
-  description: "Automated test execution report for web and mobile applications"
-  environment_file: true
-  categories_file: true
-  executor_file: true
+  clean_on_start: true  # will clear previous allure results on start
 
 
 # Browser context configuration (common settings)

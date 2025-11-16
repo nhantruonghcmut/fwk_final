@@ -1,0 +1,632 @@
+# Test Automation Framework Requirements
+# Core testing framework
+pytest>=7.4.0
+pytest-xdist>=3.3.0
+pytest-order>=1.1.0
+pytest-html>=3.2.0
+pytest-json-report>=1.5.0
+pytest-cov>=4.1.0
+pytest-benchmark>=4.0.0
+pytest-timeout>=2.1.0
+pytest-mock>=3.11.0
+pytest-asyncio>=0.21.0
+
+# Web automation
+playwright>=1.40.0
+selenium>=4.15.0
+
+# Mobile automation
+appium-python-client>=3.1.0
+
+# Reporting
+allure-pytest>=2.13.0
+allure-combine>=1.0.0
+allure-python-commons>=2.13.0
+
+# Configuration and data handling
+PyYAML>=6.0.1
+pyyaml>=6.0.1
+
+# Excel and PDF handling
+openpyxl>=3.1.0
+fpdf>=1.7
+xlsxwriter>=3.1.0
+
+# HTTP requests
+requests>=2.31.0
+urllib3>=2.0.0
+
+# Logging and utilities
+colorlog>=6.7.0
+python-dateutil>=2.8.0
+pytz>=2023.3
+
+# Image processing (for screenshots)
+Pillow>=10.0.0
+
+# Database connectivity (optional)
+pymysql>=1.1.0
+psycopg2-binary>=2.9.0
+#pysqlite3
+
+# API testing
+httpx>=0.25.0
+responses>=0.23.0
+
+# Data validation
+jsonschema>=4.19.0
+cerberus>=1.3.0
+
+# Performance testing
+locust>=2.17.0
+
+# Security testing
+bandit>=1.7.0
+safety>=2.3.0
+
+# Code quality
+black>=23.0.0
+flake8>=6.0.0
+isort>=5.12.0
+mypy>=1.5.0
+pylint>=2.17.0
+
+# Development tools
+pre-commit>=3.4.0
+tox>=4.6.0
+pip-tools>=7.0.0
+
+# CI/CD tools
+GitPython>=3.1.0
+
+# Environment management
+python-dotenv>=1.0.0
+
+# File handling
+#pathlib2>=2.3.0
+#shutil
+
+# System utilities
+psutil>=5.9.0
+
+# Network utilities
+##################### can not install without Microsoft C++ Build Tools
+#netifaces>=0.11.0
+
+# Encryption and security
+cryptography>=41.0.0
+
+# Data serialization
+msgpack>=1.1.2
+#pickle5>=0.0.12
+
+# Async support
+aiohttp>=3.8.0
+asyncio
+
+# Testing utilities
+factory-boy>=3.3.0
+faker>=19.0.0
+freezegun>=1.2.0
+
+# Documentation
+sphinx>=7.1.0
+sphinx-rtd-theme>=1.3.0
+
+# Monitoring and observability
+prometheus-client>=0.17.0
+
+# # Cloud services (optional)
+# boto3>=1.28.0
+# azure-storage-blob>=12.17.0
+# google-cloud-storage>=2.10.0
+
+# # Machine learning (optional)
+# scikit-learn>=1.3.0
+# pandas>=2.1.0
+# numpy>=1.24.0
+
+# # Web scraping (optional)
+# beautifulsoup4>=4.12.0
+# scrapy>=2.11.0
+
+# # Email testing (optional)
+# imapclient>=2.3.0
+
+# # SMS testing (optional)
+# twilio>=8.5.0
+
+# # Social media testing (optional)
+# tweepy>=4.14.0
+
+# # Payment gateway testing (optional)
+# stripe>=7.0.0
+
+# # Blockchain testing (optional)
+# web3>=6.11.0
+
+# # GraphQL testing (optional)
+# gql>=3.4.0
+
+# # WebSocket testing (optional)
+# websockets>=11.0.0
+
+# # Redis testing (optional)
+# redis>=5.0.0
+
+# # Elasticsearch testing (optional)
+# elasticsearch>=8.10.0
+
+# # MongoDB testing (optional)
+# pymongo>=4.5.0
+
+# # Docker testing (optional)
+# docker>=6.1.0
+
+# # Kubernetes testing (optional)
+# kubernetes>=28.1.0
+
+# # Terraform testing (optional)
+# python-terraform>=0.10.0
+
+# # Ansible testing (optional)
+# ansible>=7.0.0
+
+# # Jenkins testing (optional)
+# python-jenkins>=1.8.0
+
+# # GitLab testing (optional)
+# python-gitlab>=4.0.0
+
+# # GitHub testing (optional)
+# PyGithub>=1.59.0
+
+# # JIRA testing (optional)
+# jira>=3.5.0
+
+# # Confluence testing (optional)
+# atlassian-python-api>=3.41.0
+
+# # Slack testing (optional)
+# slack-sdk>=3.22.0
+
+# # Microsoft Teams testing (optional)
+# pymsteams>=0.2.0
+
+# # Discord testing (optional)
+# discord.py>=2.3.0
+
+# # Telegram testing (optional)
+# python-telegram-bot>=20.0.0
+
+# # WhatsApp testing (optional)
+# whatsapp-web.py>=0.3.0
+
+# # Zoom testing (optional)
+# pyzoom>=1.0.0
+
+# # Google Workspace testing (optional)
+# google-api-python-client>=2.100.0
+
+# # Microsoft 365 testing (optional)
+# msal>=1.24.0
+
+# # Salesforce testing (optional)
+# simple-salesforce>=1.12.0
+
+# # HubSpot testing (optional)
+# hubspot-api-client>=7.0.0
+
+# # Mailchimp testing (optional)
+# mailchimp3>=3.0.0
+
+# # SendGrid testing (optional)
+# sendgrid>=6.10.0
+
+# # AWS SES testing (optional)
+# boto3>=1.28.0
+
+# # Google Cloud testing (optional)
+# google-cloud>=0.34.0
+
+# # Azure testing (optional)
+# azure-identity>=1.14.0
+
+# # Heroku testing (optional)
+# heroku3>=4.3.0
+
+# # DigitalOcean testing (optional)
+# python-digitalocean>=1.17.0
+
+# # Linode testing (optional)
+# linode-api4>=5.0.0
+
+# # Vultr testing (optional)
+# vultr>=1.0.0
+
+# # Cloudflare testing (optional)
+# cloudflare>=2.11.0
+
+# # Fastly testing (optional)
+# fastly>=2.2.0
+
+# # Akamai testing (optional)
+# akamai>=0.1.0
+
+# # CDN testing (optional)
+# python-cdn>=1.0.0
+
+# # Load balancing testing (optional)
+# haproxy>=1.0.0
+
+# # Proxy testing (optional)
+# requests[socks]>=2.31.0
+
+# # VPN testing (optional)
+# openvpn>=1.0.0
+
+# # Firewall testing (optional)
+# iptables>=1.0.0
+
+# # Security scanning (optional)
+# nmap>=1.0.0
+
+# # Vulnerability scanning (optional)
+# nessus>=1.0.0
+
+# # Penetration testing (optional)
+# metasploit>=1.0.0
+
+# # Network monitoring (optional)
+# snmp>=1.0.0
+
+# # System monitoring (optional)
+# nagios>=1.0.0
+
+# # Log analysis (optional)
+# loguru>=0.7.0
+
+# # Metrics collection (optional)
+# statsd>=4.0.0
+
+# # Time series data (optional)
+# influxdb>=5.3.0
+
+# # Graph databases (optional)
+# neo4j>=5.12.0
+
+# # Search engines (optional)
+# whoosh>=2.7.0
+
+# # Full-text search (optional)
+# whoosh>=2.7.0
+
+# # OCR testing (optional)
+# pytesseract>=0.3.10
+
+# # Image recognition (optional)
+# opencv-python>=4.8.0
+
+# # Video processing (optional)
+# moviepy>=1.0.0
+
+# # Audio processing (optional)
+# pydub>=0.25.0
+
+# # PDF processing (optional)
+# PyPDF2>=3.0.0
+
+# # Word document processing (optional)
+# python-docx>=0.8.11
+
+# # Excel processing (optional)
+# xlrd>=2.0.0
+
+# # CSV processing (optional)
+# csvkit>=1.1.0
+
+# # JSON processing (optional)
+# ijson>=3.2.0
+
+# # XML processing (optional)
+# lxml>=4.9.0
+
+# # HTML processing (optional)
+# html5lib>=1.1
+
+# # Markdown processing (optional)
+# markdown>=3.5.0
+
+# # ReStructuredText processing (optional)
+# docutils>=0.20.0
+
+# # LaTeX processing (optional)
+# pylatex>=1.4.0
+
+# # Email processing (optional)
+# email-validator>=2.0.0
+
+# # Phone number processing (optional)
+# phonenumbers>=8.13.0
+
+# # Address processing (optional)
+# usaddress>=0.5.0
+
+# # Credit card processing (optional)
+# creditcard>=1.0.0
+
+# # Social security number processing (optional)
+# ssn>=1.0.0
+
+# # Date and time processing (optional)
+# arrow>=1.3.0
+
+# # Timezone processing (optional)
+# pytz>=2023.3
+
+# # Calendar processing (optional)
+# icalendar>=5.0.0
+
+# # Weather data (optional)
+# pyowm>=3.3.0
+
+# # Stock market data (optional)
+# yfinance>=0.2.0
+
+# # Cryptocurrency data (optional)
+# ccxt>=4.0.0
+
+# # News data (optional)
+# newsapi-python>=0.2.0
+
+# # Social media data (optional)
+# tweepy>=4.14.0
+
+# # Reddit data (optional)
+# praw>=7.7.0
+
+# # YouTube data (optional)
+# youtube-dl>=2021.12.17
+
+# # Instagram data (optional)
+# instaloader>=4.9.0
+
+# # TikTok data (optional)
+# TikTokApi>=5.2.0
+
+# # LinkedIn data (optional)
+# linkedin-api>=2.2.0
+
+# # Facebook data (optional)
+# facebook-sdk>=3.1.0
+
+# # Pinterest data (optional)
+# pinterest-api>=1.0.0
+
+# # Snapchat data (optional)
+# snapchat-api>=1.0.0
+
+# # Twitch data (optional)
+# twitchio>=2.7.0
+
+# # Discord data (optional)
+# discord.py>=2.3.0
+
+# # Telegram data (optional)
+# python-telegram-bot>=20.0.0
+
+# # WhatsApp data (optional)
+# whatsapp-web.py>=0.3.0
+
+# # Signal data (optional)
+# signal-api>=1.0.0
+
+# # Matrix data (optional)
+# matrix-nio>=0.21.0
+
+# # IRC data (optional)
+# irc>=20.0.0
+
+# # XMPP data (optional)
+# slixmpp>=1.7.0
+
+# # WebRTC data (optional)
+# aiortc>=1.6.0
+
+# # SIP data (optional)
+# pjsua>=1.0.0
+
+# # VoIP data (optional)
+# asterisk>=1.0.0
+
+# # PBX data (optional)
+# freepbx>=1.0.0
+
+# # Call center data (optional)
+# asterisk>=1.0.0
+
+# # CRM data (optional)
+# salesforce>=1.0.0
+
+# # ERP data (optional)
+# odoo>=1.0.0
+
+# # Accounting data (optional)
+# quickbooks>=1.0.0
+
+# # Inventory data (optional)
+# inventory>=1.0.0
+
+# # Shipping data (optional)
+# fedex>=1.0.0
+
+# # Tracking data (optional)
+# tracking>=1.0.0
+
+# # Logistics data (optional)
+# logistics>=1.0.0
+
+# # Supply chain data (optional)
+# supplychain>=1.0.0
+
+# # Manufacturing data (optional)
+# manufacturing>=1.0.0
+
+# # Quality control data (optional)
+# quality>=1.0.0
+
+# # Compliance data (optional)
+# compliance>=1.0.0
+
+# # Audit data (optional)
+# audit>=1.0.0
+
+# # Risk management data (optional)
+# risk>=1.0.0
+
+# # Insurance data (optional)
+# insurance>=1.0.0
+
+# # Banking data (optional)
+# banking>=1.0.0
+
+# # Payment processing data (optional)
+# payment>=1.0.0
+
+# # E-commerce data (optional)
+# ecommerce>=1.0.0
+
+# # Marketplace data (optional)
+# marketplace>=1.0.0
+
+# # Auction data (optional)
+# auction>=1.0.0
+
+# # Real estate data (optional)
+# realestate>=1.0.0
+
+# # Property management data (optional)
+# property>=1.0.0
+
+# # Construction data (optional)
+# construction>=1.0.0
+
+# # Architecture data (optional)
+# architecture>=1.0.0
+
+# # Engineering data (optional)
+# engineering>=1.0.0
+
+# # Healthcare data (optional)
+# healthcare>=1.0.0
+
+# # Medical data (optional)
+# medical>=1.0.0
+
+# # Pharmaceutical data (optional)
+# pharmaceutical>=1.0.0
+
+# # Biotechnology data (optional)
+# biotechnology>=1.0.0
+
+# # Agriculture data (optional)
+# agriculture>=1.0.0
+
+# # Food and beverage data (optional)
+# food>=1.0.0
+
+# # Hospitality data (optional)
+# hospitality>=1.0.0
+
+# # Tourism data (optional)
+# tourism>=1.0.0
+
+# # Travel data (optional)
+# travel>=1.0.0
+
+# # Transportation data (optional)
+# transportation>=1.0.0
+
+# # Logistics data (optional)
+# logistics>=1.0.0
+
+# # Supply chain data (optional)
+# supplychain>=1.0.0
+
+# # Manufacturing data (optional)
+# manufacturing>=1.0.0
+
+# # Quality control data (optional)
+# quality>=1.0.0
+
+# # Compliance data (optional)
+# compliance>=1.0.0
+
+# # Audit data (optional)
+# audit>=1.0.0
+
+# # Risk management data (optional)
+# risk>=1.0.0
+
+# # Insurance data (optional)
+# insurance>=1.0.0
+
+# # Banking data (optional)
+# banking>=1.0.0
+
+# # Payment processing data (optional)
+# payment>=1.0.0
+
+# # E-commerce data (optional)
+# ecommerce>=1.0.0
+
+# # Marketplace data (optional)
+# marketplace>=1.0.0
+
+# # Auction data (optional)
+# auction>=1.0.0
+
+# # Real estate data (optional)
+# realestate>=1.0.0
+
+# # Property management data (optional)
+# property>=1.0.0
+
+# # Construction data (optional)
+# construction>=1.0.0
+
+# # Architecture data (optional)
+# architecture>=1.0.0
+
+# # Engineering data (optional)
+# engineering>=1.0.0
+
+# # Healthcare data (optional)
+# healthcare>=1.0.0
+
+# # Medical data (optional)
+# medical>=1.0.0
+
+# # Pharmaceutical data (optional)
+# pharmaceutical>=1.0.0
+
+# # Biotechnology data (optional)
+# biotechnology>=1.0.0
+
+# # Agriculture data (optional)
+# agriculture>=1.0.0
+
+# # Food and beverage data (optional)
+# food>=1.0.0
+
+# # Hospitality data (optional)
+# hospitality>=1.0.0
+
+# # Tourism data (optional)
+# tourism>=1.0.0
+
+# # Travel data (optional)
+# travel>=1.0.0
+
+# # Transportation data (optional)
+# transportation>=1.0.0

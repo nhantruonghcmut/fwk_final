@@ -273,6 +273,68 @@ def main():
     # Separate config args from pytest args
     config_args, pytest_args = extract_config_args(cli_args)
     
+    # ============================================
+    # CLEAN PYTEST LOG FILES (if configured)
+    # ============================================
+    # This must be done BEFORE pytest starts
+    pytest_logging_config = config_manager.get_pytest_logging_config()
+    if pytest_logging_config:
+        file_config = pytest_logging_config.get('file', {})
+        if file_config.get('enabled', False):
+            clean_on_start = file_config.get('clean_on_start', False)
+            # Handle both boolean and string values
+            if isinstance(clean_on_start, str):
+                clean_on_start = clean_on_start.lower() in ('true', '1', 'yes', 'on')
+            clean_on_start = bool(clean_on_start)
+            
+            if clean_on_start:
+                import logging
+                from pathlib import Path
+                log_file_path = file_config.get('path', 'reports/logs/pytest.log')
+                log_path = Path(log_file_path)
+                log_dir = log_path.parent
+                
+                # Get list of files currently in use by log handlers
+                files_in_use = set()
+                root_logger = logging.getLogger()
+                test_logger = logging.getLogger("TestAutomation")
+                
+                for handler in root_logger.handlers + test_logger.handlers:
+                    if isinstance(handler, logging.FileHandler):
+                        try:
+                            handler_file = Path(handler.baseFilename)
+                            if handler_file.exists():
+                                files_in_use.add(handler_file.resolve())
+                        except (AttributeError, OSError):
+                            pass
+                
+                # Delete each file in the logs directory, skip files in use
+                if log_dir.exists() and log_dir.is_dir():
+                    deleted_count = 0
+                    skipped_count = 0
+                    for file in log_dir.iterdir():
+                        if file.is_file():
+                            file_resolved = file.resolve()
+                            if file_resolved in files_in_use:
+                                skipped_count += 1
+                                logger.debug(f"[PYTEST-LOG] Skipping file in use: {file.name}")
+                            else:
+                                try:
+                                    file.unlink()
+                                    deleted_count += 1
+                                except PermissionError:
+                                    skipped_count += 1
+                                    logger.debug(f"[PYTEST-LOG] Could not delete file (locked): {file.name}")
+                    
+                    if deleted_count > 0:
+                        logger.info(f"[PYTEST-LOG] Deleted {deleted_count} file(s) from directory: {log_dir}")
+                    if skipped_count > 0:
+                        logger.info(f"[PYTEST-LOG] Skipped {skipped_count} file(s) (in use or locked)")
+                
+                # Ensure directory exists
+                log_dir.mkdir(parents=True, exist_ok=True)
+                logger.info(f"[PYTEST-LOG] Log file will be created at: {log_file_path}")
+    
     # Build complete pytest arguments from config + CLI
     # Custom options (--env, etc.) sẽ được lấy từ pytest_configure hook
     final_pytest_args = build_pytest_args_from_config(config_args, pytest_args)

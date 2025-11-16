@@ -4,7 +4,7 @@ mobile:
   
   parallel:
     enabled: true
-    workers: 2  # Override for mobile
+    workers: 3  # Override for mobile, should be equal to number of devices
     distribution: "loadgroup"  # Mobile cần group theo device
   
   devices:
@@ -31,16 +31,16 @@ mobile:
     app_activity: "com.socialnmobile.dictapps.notepad.color.note/com.socialnmobile.colornote.activity.Main"
 
 
-  # - device_name: "emulator-5558"
-  #   platform_name: "Android"
-  #   platform_version: "11"
-  #   automation_name: "UiAutomator2"
-  #   udid: "emulator-5558"
-  #   no_reset: false
-  #   full_reset: false
-  #   new_command_timeout: 300
-  #   app_package: "com.socialnmobile.dictapps.notepad.color.note"
-  #   app_activity: "com.socialnmobile.dictapps.notepad.color.note/com.socialnmobile.colornote.activity.Main"
+  - device_name: "emulator-5558"
+    platform_name: "Android"
+    platform_version: "9.0"
+    automation_name: "UiAutomator2"
+    udid: "emulator-5558"
+    no_reset: false
+    full_reset: false
+    new_command_timeout: 300
+    app_package: "com.socialnmobile.dictapps.notepad.color.note"
+    app_activity: "com.socialnmobile.dictapps.notepad.color.note/com.socialnmobile.colornote.activity.Main"
 
   # - device_name: "emulator-5560"
   #   platform_name: "Android"
@@ -69,3 +69,12 @@ mobile:
   retry:
     count: 2  # Mobile ít retry hơn
     delay: 2000
+  
+  connection_retry:
+    max_retries: 3  # Số lần retry khi gặp lỗi connection (socket hang up, etc.)
+    delay: 2.0  # Base delay giữa các lần retry (giây), delay tăng tuyến tính với mỗi attempt
+  
+  # Mobile context configuration (apply to all devices, can be overridden per device)
+  context:
+    timezone: "Asia/Ho_Chi_Minh"  # Android: timeZone, iOS: appTimeZone
+    locale: "vi_VN"  # Both platforms: locale

@@ -343,14 +343,12 @@ automation_exercise_testdata:
     screenshots:
       on_failure: true
       on_success: false  # Set to true for demo
-      on_step: false  # Set to true for step-by-step capture
       directory: "reports/screenshots/automation_exercise"
     
     # ⚠️ OVERRIDE: Retry configuration (suite-specific)
     retry:
       count: 2  # Override: Reduce retry for stable tests
       delay: 1000
-      exponential_backoff: false
     
     # ⚠️ OVERRIDE: Execution settings
     execution:

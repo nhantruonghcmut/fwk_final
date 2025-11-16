@@ -13,10 +13,10 @@ from src.core.browser.browser_factory import BrowserFactory
 class SuiteListener:
     """Listener for handling test suite events."""
     
-    def __init__(self, config_manager: ConfigManager, browser_factory: BrowserFactory, logger: ReportLogger):
+    def __init__(self, config_manager: ConfigManager, browser_factory: BrowserFactory, logger: ReportLogger, allure_generator: AllureReportGenerator):
         self.logger = logger
         self.config_manager = config_manager
-        self.allure_generator = AllureReportGenerator()
+        self.allure_generator = allure_generator
         self.browser_factory = browser_factory
         self.suite_start_time = None
         self.suite_end_time = None

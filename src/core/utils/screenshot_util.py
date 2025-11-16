@@ -3,11 +3,48 @@ Screenshot utility for capturing screenshots on test failures and success.
 """
 import os
 import time
+import re
+from dataclasses import dataclass
 from typing import Optional, Dict, Any
 from playwright.sync_api import Page
 from appium import webdriver
 from src.core.utils.report_logger import ReportLogger
 from src.core.utils.config_manager import ConfigManager
+
+
+@dataclass
+class ScreenshotResult:
+    """Result object containing screenshot path and binary data."""
+    path: str
+    binary: bytes
+    
+    def attach_to_allure(self, name: str = "Screenshot") -> str:
+        """Helper method to attach screenshot to Allure report.
+        
+        Args:
+            name: Name for the attachment in Allure report
+            
+        Returns:
+            str: The screenshot path (for logging purposes)
+        """
+        try:
+            import allure
+            allure.attach(self.binary, name, allure.attachment_type.PNG)
+        except ImportError:
+            # Allure not available, skip silently
+            pass
+        except Exception as e:
+            # Log error but don't fail
+            pass
+        return self.path
+    
+    def __bool__(self) -> bool:
+        """Check if screenshot result is valid."""
+        return bool(self.path and self.binary)
+    
+    def __str__(self) -> str:
+        """Return path as string representation."""
+        return self.path
 
 
 class ScreenshotUtil:
@@ -26,108 +63,302 @@ class ScreenshotUtil:
         except Exception as e:
             self.logger.error(f"Failed to create screenshot directory: {str(e)}")
             
-    def take_screenshot(self, name: str = None, page: Page = None, driver: webdriver.Remote = None) -> str:
-        """Take screenshot using Playwright or Appium."""
+    def _generate_auto_snapshot_name(self, test_context=None) -> str:
+        """Generate automatic snapshot name in format: [device_name/browser_type]_testsuite_testcase_testID_stt"""
+        try:
+            # Try to get test_context from pytest item if not provided
+            if test_context is None:
+                try:
+                    import _pytest
+                    import inspect
+                    # Try to get request from call stack
+                    frame = inspect.currentframe()
+                    while frame:
+                        frame = frame.f_back
+                        if frame and 'request' in frame.f_locals:
+                            request = frame.f_locals.get('request')
+                            if request and hasattr(request, 'node') and hasattr(request.node, 'test_context'):
+                                test_context = request.node.test_context
+                                break
+                except:
+                    pass
+            
+            if test_context is None:
+                # Fallback to timestamp if no context available
+                self.logger.warning("No test_context available, using timestamp for screenshot name")
+                return f"screenshot_{int(time.time())}"
+            
+            # Get test suite name (from test file)
+            test_file = test_context.get_test_file()
+            if test_file:
+                # Extract filename without extension
+                test_suite = os.path.splitext(os.path.basename(test_file))[0]
+                # Remove 'test_' prefix if exists
+                test_suite = re.sub(r'^test_', '', test_suite, flags=re.IGNORECASE)
+            else:
+                test_suite = "unknown_suite"
+            
+            # Get test case name (from test method) - remove parametrize suffix
+            test_case = test_context.get_test_name() or test_context.get_test_method()
+            if test_case:
+                # Remove 'test_' prefix if exists
+                test_case = re.sub(r'^test_', '', test_case, flags=re.IGNORECASE)
+                # Remove parametrize suffix like [TC003_COMPLEX_001-emulator-5556]
+                test_case = re.sub(r'\[.*?\]$', '', test_case)
+            else:
+                test_case = "unknown_case"
+            
+            # Get device_name (for mobile) or browser_type (for web)
+            platform = test_context.get_platform() or "unknown"
+            device_or_browser = "unknown"
+            
+            if platform == "mobile":
+                device_name = test_context.get_device_name()
+                if device_name:
+                    device_or_browser = device_name
+            else:
+                browser_type = test_context.get_browser_type()
+                if browser_type:
+                    device_or_browser = browser_type
+            
+            # Sanitize device_or_browser name
+            device_or_browser = re.sub(r'[<>:"/\\|?*]', '_', device_or_browser)
+            device_or_browser = re.sub(r'\s+', '_', device_or_browser)
+            
+            # Get test ID from test data
+            test_data = test_context.get_test_data()
+            test_id = "unknown_id"
+            
+            # Try to get test_id from test_data
+            if test_data:
+                # Try different possible keys for test_id
+                test_id = (test_data.get('test_id') or 
+                          test_data.get('testID') or 
+                          test_data.get('testId') or
+                          "unknown_id")
+            
+            # If still unknown, try to extract from test_name (parametrize format: [TC003_COMPLEX_001-...])
+            if test_id == "unknown_id":
+                test_name = test_context.get_test_name() or ""
+                # Extract test_id from format: test_name[TC003_COMPLEX_001-emulator-5556]
+                match = re.search(r'\[([A-Z0-9_]+)', test_name)
+                if match:
+                    test_id = match.group(1)
+            
+            # If still unknown, try to get from pytest item's funcargs (parametrize fixtures)
+            if test_id == "unknown_id":
+                try:
+                    import _pytest
+                    import inspect
+                    # Try to get request from call stack
+                    frame = inspect.currentframe()
+                    while frame:
+                        frame = frame.f_back
+                        if frame and 'request' in frame.f_locals:
+                            request = frame.f_locals.get('request')
+                            if request and hasattr(request, 'node'):
+                                # Check funcargs for test data fixtures
+                                funcargs = getattr(request.node, 'funcargs', {})
+                                for key, value in funcargs.items():
+                                    if isinstance(value, dict) and ('test_id' in value or 'testID' in value or 'testId' in value):
+                                        test_id = value.get('test_id') or value.get('testID') or value.get('testId', "unknown_id")
+                                        # Also set to test_context for future use
+                                        test_context.set_test_data(value)
+                                        break
+                                if test_id != "unknown_id":
+                                    break
+                except Exception as e:
+                    self.logger.debug(f"Could not get test_id from funcargs: {str(e)}")
+            
+            # Get next sequence number for this test_id
+            stt = test_context.get_next_snapshot_stt(test_id)
+            
+            # Generate name: [device_name/browser_type]_testsuite_testcase_testID_stt
+            name = f"{device_or_browser}_{test_suite}_{test_case}_{test_id}_{stt}"
+            
+            # Sanitize name (remove invalid characters for filename)
+            name = re.sub(r'[<>:"/\\|?*]', '_', name)
+            name = re.sub(r'\s+', '_', name)
+            
+            return name
+            
+        except Exception as e:
+            self.logger.warning(f"Failed to generate auto snapshot name: {str(e)}")
+            import traceback
+            self.logger.debug(f"Traceback: {traceback.format_exc()}")
+            return f"screenshot_{int(time.time())}"
+    
+    def take_screenshot(self, name: str = None, page: Page = None, driver: webdriver.Remote = None, test_context=None) -> ScreenshotResult:
+        """Take screenshot using Playwright or Appium.
+        
+        Args:
+            name: Screenshot name. If None, will auto-generate based on test context.
+            page: Playwright page object (for web)
+            driver: Appium driver object (for mobile)
+            test_context: TestContext object for auto-generating name
+            
+        Returns:
+            ScreenshotResult: Object containing path and binary data
+        """
         try:
             if not name:
-                name = f"screenshot_{int(time.time())}"
+                name = self._generate_auto_snapshot_name(test_context)
                 
             screenshot_path = os.path.join(self.screenshot_dir, f"{name}.png")
+            screenshot_binary = b""
             
             if page:
-                # Playwright screenshot
-                page.screenshot(path=screenshot_path)
+                # Playwright screenshot - get binary first, then save
+                screenshot_binary = page.screenshot()
+                # Save to file
+                with open(screenshot_path, 'wb') as f:
+                    f.write(screenshot_binary)
                 self.logger.log_screenshot(screenshot_path)
             elif driver:
-                # Appium screenshot
+                # Appium screenshot - save first, then read binary
                 driver.save_screenshot(screenshot_path)
+                with open(screenshot_path, 'rb') as f:
+                    screenshot_binary = f.read()
                 self.logger.log_screenshot(screenshot_path)
             else:
                 self.logger.error("No page or driver provided for screenshot")
-                return ""
+                return ScreenshotResult("", b"")
                 
-            return screenshot_path
+            return ScreenshotResult(screenshot_path, screenshot_binary)
             
         except Exception as e:
             self.logger.log_error(e, "take_screenshot")
-            return ""
+            return ScreenshotResult("", b"")
             
-    def take_element_screenshot(self, element, name: str = None) -> str:
-        """Take screenshot of specific element."""
+    def take_element_screenshot(self, element, name: str = None, test_context=None) -> ScreenshotResult:
+        """Take screenshot of specific element.
+        
+        Returns:
+            ScreenshotResult: Object containing path and binary data
+        """
         try:
             if not name:
-                name = f"element_screenshot_{int(time.time())}"
+                name = self._generate_auto_snapshot_name(test_context)
+                name = f"element_{name}"
                 
             screenshot_path = os.path.join(self.screenshot_dir, f"{name}.png")
+            screenshot_binary = b""
             
             # Check if element is Playwright or Selenium
             if hasattr(element, 'screenshot'):
-                # Playwright element
-                element.screenshot(path=screenshot_path)
-            elif hasattr(element, 'screenshot'):
-                # Selenium element
-                element.screenshot(screenshot_path)
+                # Try Playwright element first (has screenshot method that can return bytes)
+                try:
+                    # Playwright element - get binary first
+                    screenshot_binary = element.screenshot()
+                    # Save to file
+                    with open(screenshot_path, 'wb') as f:
+                        f.write(screenshot_binary)
+                except TypeError:
+                    # If screenshot() requires path parameter, use path
+                    element.screenshot(path=screenshot_path)
+                    with open(screenshot_path, 'rb') as f:
+                        screenshot_binary = f.read()
             else:
                 self.logger.error("Unsupported element type for screenshot")
-                return ""
+                return ScreenshotResult("", b"")
                 
             self.logger.log_screenshot(screenshot_path)
-            return screenshot_path
+            return ScreenshotResult(screenshot_path, screenshot_binary)
             
         except Exception as e:
             self.logger.log_error(e, "take_element_screenshot")
-            return ""
+            return ScreenshotResult("", b"")
             
-    def take_full_page_screenshot(self, page: Page, name: str = None) -> str:
-        """Take full page screenshot."""
+    def take_full_page_screenshot(self, page: Page, name: str = None, test_context=None) -> ScreenshotResult:
+        """Take full page screenshot.
+        
+        Returns:
+            ScreenshotResult: Object containing path and binary data
+        """
         try:
             if not name:
-                name = f"full_page_screenshot_{int(time.time())}"
+                name = self._generate_auto_snapshot_name(test_context)
+                name = f"fullpage_{name}"
                 
             screenshot_path = os.path.join(self.screenshot_dir, f"{name}.png")
-            page.screenshot(path=screenshot_path, full_page=True)
+            # Playwright full page screenshot - get binary first
+            screenshot_binary = page.screenshot(full_page=True)
+            # Save to file
+            with open(screenshot_path, 'wb') as f:
+                f.write(screenshot_binary)
             self.logger.log_screenshot(screenshot_path)
-            return screenshot_path
+            return ScreenshotResult(screenshot_path, screenshot_binary)
             
         except Exception as e:
             self.logger.log_error(e, "take_full_page_screenshot")
-            return ""
+            return ScreenshotResult("", b"")
             
-    def take_mobile_screenshot(self, driver: webdriver.Remote, name: str = None) -> str:
-        """Take mobile screenshot."""
+    def take_mobile_screenshot(self, driver: webdriver.Remote, name: str = None, test_context=None) -> ScreenshotResult:
+        """Take mobile screenshot.
+        
+        Returns:
+            ScreenshotResult: Object containing path and binary data
+        """
         try:
             if not name:
-                name = f"mobile_screenshot_{int(time.time())}"
+                name = self._generate_auto_snapshot_name(test_context)
                 
             screenshot_path = os.path.join(self.screenshot_dir, f"{name}.png")
+            # Appium screenshot - save first, then read binary
             driver.save_screenshot(screenshot_path)
+            with open(screenshot_path, 'rb') as f:
+                screenshot_binary = f.read()
             self.logger.log_screenshot(screenshot_path)
-            return screenshot_path
+            return ScreenshotResult(screenshot_path, screenshot_binary)
             
         except Exception as e:
             self.logger.log_error(e, "take_mobile_screenshot")
-            return ""
+            return ScreenshotResult("", b"")
             
-    def take_screenshot_on_failure(self, test_name: str, page: Page = None, driver: webdriver.Remote = None) -> str:
-        """Take screenshot on test failure."""
+    def take_screenshot_on_failure(self, test_name: str, page: Page = None, driver: webdriver.Remote = None, test_context=None) -> ScreenshotResult:
+        """Take screenshot on test failure.
+        
+        Returns:
+            ScreenshotResult: Object containing path and binary data
+        """
         if not self.config_manager.should_take_screenshot_on_failure() or (page==None and driver==None):
-            return ""
+            return ScreenshotResult("", b"")
             
-        name = f"failure_{test_name}_{int(time.time())}"
-        return self.take_screenshot(name, page, driver)
+        # Use auto-generated name if test_context is provided, otherwise use test_name
+        if test_context:
+            name = None  # Will auto-generate
+        else:
+            name = f"failure_{test_name}_{int(time.time())}"
+        return self.take_screenshot(name, page, driver, test_context)
         
-    def take_screenshot_on_success(self, test_name: str, page: Page = None, driver: webdriver.Remote = None) -> str:
-        """Take screenshot on test success."""
+    def take_screenshot_on_success(self, test_name: str, page: Page = None, driver: webdriver.Remote = None, test_context=None) -> ScreenshotResult:
+        """Take screenshot on test success.
+        
+        Returns:
+            ScreenshotResult: Object containing path and binary data
+        """
         if not self.config_manager.should_take_screenshot_on_success():
-            return ""
+            return ScreenshotResult("", b"")
             
-        name = f"success_{test_name}_{int(time.time())}"
-        return self.take_screenshot(name, page, driver)
+        # Use auto-generated name if test_context is provided, otherwise use test_name
+        if test_context:
+            name = None  # Will auto-generate
+        else:
+            name = f"success_{test_name}_{int(time.time())}"
+        return self.take_screenshot(name, page, driver, test_context)
         
-    def take_screenshot_on_step(self, step_name: str, page: Page = None, driver: webdriver.Remote = None) -> str:
-        """Take screenshot on test step."""
-        name = f"step_{step_name}_{int(time.time())}"
-        return self.take_screenshot(name, page, driver)
+    def take_screenshot_on_step(self, step_name: str, page: Page = None, driver: webdriver.Remote = None, test_context=None) -> ScreenshotResult:
+        """Take screenshot on test step.
+        
+        Returns:
+            ScreenshotResult: Object containing path and binary data
+        """
+        # Use auto-generated name if test_context is provided, otherwise use step_name
+        if test_context:
+            name = None  # Will auto-generate
+        else:
+            name = f"step_{step_name}_{int(time.time())}"
+        return self.take_screenshot(name, page, driver, test_context)
         
     def cleanup_old_screenshots(self, days_old: int = 7):
         """Cleanup screenshots older than specified days."""

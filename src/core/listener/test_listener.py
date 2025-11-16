@@ -13,10 +13,10 @@ from src.core.utils.test_context import TestContext
 class TestListener:
     """Listener for handling individual test events."""
     
-    def __init__(self, logger: ReportLogger):
+    def __init__(self, logger: ReportLogger, allure_generator: AllureReportGenerator):
         self.logger = logger
         self.screenshot_util = ScreenshotUtil()
-        self.allure_generator = AllureReportGenerator()
+        self.allure_generator = allure_generator
         self.test_start_time = None
         self.test_context = None
         self.current_step = None
@@ -238,9 +238,9 @@ class TestListener:
         self.logger.error(error_message)
         
         # Take screenshot on error
-        screenshot_path = self.screenshot_util.take_screenshot("error")
-        if screenshot_path:
-            self.allure_generator.add_screenshot(screenshot_path, f"Error Screenshot - {context}")
+        screenshot_result = self.screenshot_util.take_screenshot("error")
+        if screenshot_result:
+            self.allure_generator.add_screenshot(screenshot_result.path, f"Error Screenshot - {context}")
             
         self.allure_generator.add_error(error_message)
         
@@ -260,9 +260,9 @@ class TestListener:
         """Handle test failure with screenshot and error details."""
         try:
             # Take screenshot on failure
-            screenshot_path = self.screenshot_util.take_screenshot(f"failure_{test_name}")
-            if screenshot_path:
-                self.allure_generator.add_screenshot(screenshot_path, f"Failure Screenshot - {test_name}")
+            screenshot_result = self.screenshot_util.take_screenshot(f"failure_{test_name}")
+            if screenshot_result:
+                self.allure_generator.add_screenshot(screenshot_result.path, f"Failure Screenshot - {test_name}")
                 
             # Add error details
             error_details = {

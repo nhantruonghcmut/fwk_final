@@ -60,21 +60,33 @@ class ReportLogger:
             self._setup_default_logger()
     
     def _setup_formatters(self):
-        """Setup log formatters."""
-        self.formatters = {
-            'detailed': logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S'
-            ),
-            'simple': logging.Formatter(
-                '%(asctime)s - %(levelname)s - %(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S'
-            ),
-            'json': logging.Formatter(
-                '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s"}',
-                datefmt='%Y-%m-%d %H:%M:%S'
-            )
-        }
+        """Setup log formatters from config."""
+        if not self.log_config:
+            # Fallback to default formatters if config not available
+            self.formatters = {
+                'detailed': logging.Formatter(
+                    '%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S'
+                ),
+                'simple': logging.Formatter(
+                    '%(asctime)s - %(levelname)s - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S'
+                ),
+                'json': logging.Formatter(
+                    '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s"}',
+                    datefmt='%Y-%m-%d %H:%M:%S'
+                )
+            }
+            return
+        
+        # Get formatters from config
+        formatters_config = self.log_config.get('formatters', {})
+        self.formatters = {}
+        
+        for formatter_name, formatter_config in formatters_config.items():
+            format_str = formatter_config.get('format', '%(asctime)s - %(levelname)s - %(message)s')
+            datefmt = formatter_config.get('datefmt', '%Y-%m-%d %H:%M:%S')
+            self.formatters[formatter_name] = logging.Formatter(format_str, datefmt=datefmt)
     
     def _setup_handlers(self):
         """Setup log handlers."""
@@ -91,24 +103,58 @@ class ReportLogger:
         
         # File handler
         if self.log_config.get('file', {}).get('enabled', True):
-            log_dir = self.log_config.get('file', {}).get('directory', 'reports/logs')
+            file_config = self.log_config.get('file', {})
+            log_dir = file_config.get('directory', 'reports/logs')
             os.makedirs(log_dir, exist_ok=True)
             
             log_file = os.path.join(log_dir, f"test_execution_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
-            file_handler = logging.FileHandler(log_file, encoding='utf-8')
-            file_handler.setLevel(getattr(logging, self.log_config.get('file', {}).get('level', 'DEBUG')))
-            file_handler.setFormatter(self.formatters[self.log_config.get('file', {}).get('format', 'detailed')])
+            encoding = file_config.get('encoding', 'utf-8')
+            max_size = file_config.get('max_size', 10485760)  # 10MB default
+            backup_count = file_config.get('backup_count', 5)
+            
+            # Use RotatingFileHandler if max_size is specified
+            from logging.handlers import RotatingFileHandler
+            file_handler = RotatingFileHandler(
+                log_file, 
+                maxBytes=max_size, 
+                backupCount=backup_count,
+                encoding=encoding
+            )
+            file_handler.setLevel(getattr(logging, file_config.get('level', 'DEBUG')))
+            format_name = file_config.get('format', 'detailed')
+            if format_name in self.formatters:
+                file_handler.setFormatter(self.formatters[format_name])
+            else:
+                # Fallback to detailed if format not found
+                file_handler.setFormatter(self.formatters.get('detailed', self.formatters.get('simple')))
             self._logger.addHandler(file_handler)
         
         # Error file handler
         if self.log_config.get('error_file', {}).get('enabled', True):
-            log_dir = self.log_config.get('error_file', {}).get('directory', 'reports/logs')
+            error_config = self.log_config.get('error_file', {})
+            log_dir = error_config.get('directory', 'reports/logs')
             os.makedirs(log_dir, exist_ok=True)
             
             error_file = os.path.join(log_dir, f"errors_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
-            error_handler = logging.FileHandler(error_file, encoding='utf-8')
+            encoding = error_config.get('encoding', 'utf-8')
+            max_size = error_config.get('max_size', 5242880)  # 5MB default
+            backup_count = error_config.get('backup_count', 3)
+            
+            # Use RotatingFileHandler if max_size is specified
+            from logging.handlers import RotatingFileHandler
+            error_handler = RotatingFileHandler(
+                error_file,
+                maxBytes=max_size,
+                backupCount=backup_count,
+                encoding=encoding
+            )
             error_handler.setLevel(logging.ERROR)
-            error_handler.setFormatter(self.formatters[self.log_config.get('error_file', {}).get('format', 'detailed')])
+            format_name = error_config.get('format', 'detailed')
+            if format_name in self.formatters:
+                error_handler.setFormatter(self.formatters[format_name])
+            else:
+                # Fallback to detailed if format not found
+                error_handler.setFormatter(self.formatters.get('detailed', self.formatters.get('simple')))
             self._logger.addHandler(error_handler)
     
     def _setup_default_logger(self):
@@ -170,11 +216,6 @@ class ReportLogger:
         """Log test start."""
         self.info(f"[START] Starting test: {test_name} in {test_file}")
     
-    def log_test_end(self, test_name: str, result: str, duration: float):
-        """Log test end."""
-        status_emoji = "[OK]" if result == "PASSED" else "[FAIL]" if result == "FAILED" else "[SKIP]"
-        self.info(f"{status_emoji} Test completed: {test_name} - {result} ({duration:.2f}s)")
-    
     def log_test_step(self, step: str):
         """Log test step."""
         self.info(f"[STEP] Test Step: {step}")
@@ -219,36 +260,31 @@ class ReportLogger:
         warning_msg = f"[WARNING] Warning in {context}: {warning}" if context else f"[WARNING] Warning: {warning}"
         self.warning(warning_msg)
     
-    def log_info(self, info: str, context: str = ""):
-        """Log info with context."""
-        info_msg = f"[INFO] Info in {context}: {info}" if context else f"[INFO] Info: {info}"
-        self.info(info_msg)
-    
-    def log_performance(self, operation: str, duration: float):
-        """Log performance metric."""
-        self.info(f"Performance: {operation} took {duration:.2f}ms")
-    
-    def log_configuration(self, config_name: str, config_value: Any):
-        """Log configuration value."""
-        self.debug(f"[CONFIG] Configuration: {config_name} = {config_value}")
-    
-    def log_environment(self, environment: str):
-        """Log environment information."""
-        self.info(f"[ENV] Environment: {environment}")
-    
-    def log_browser_info(self, browser_type: str, version: str = ""):
-        """Log browser information."""
+    def log_browser_info(self, browser_type: str, version: str = "", **kwargs):
+        """Log browser information and configuration."""
         browser_info = f"[BROWSER] Browser: {browser_type}"
         if version:
             browser_info += f" (Version: {version})"
         self.info(browser_info)
+        
+        # Log additional browser configuration if provided
+        if kwargs:
+            config_str = ", ".join([f"{k}={v}" for k, v in kwargs.items() if v is not None])
+            if config_str:
+                self.debug(f"[BROWSER] Configuration: {config_str}")
     
-    def log_mobile_info(self, platform: str, device_name: str, version: str = ""):
-        """Log mobile device information."""
-        mobile_info = f"📱 Mobile: {platform} - {device_name}"
+    def log_mobile_info(self, platform: str, device_name: str, version: str = "", **kwargs):
+        """Log mobile device information and configuration."""
+        mobile_info = f"[MOBILE] Platform: {platform} - Device: {device_name}"
         if version:
             mobile_info += f" (Version: {version})"
         self.info(mobile_info)
+        
+        # Log additional mobile configuration if provided
+        if kwargs:
+            config_str = ", ".join([f"{k}={v}" for k, v in kwargs.items() if v is not None])
+            if config_str:
+                self.debug(f"[MOBILE] Configuration: {config_str}")
     
     def log_suite_start(self, suite_name: str, test_count: int):
         """Log test suite start."""
@@ -282,84 +318,9 @@ class ReportLogger:
         for handler in self._logger.handlers:
             handler.setLevel(log_level)
     
-    def add_handler(self, handler: logging.Handler):
-        """Add custom handler."""
-        self._logger.addHandler(handler)
-    
-    def remove_handler(self, handler: logging.Handler):
-        """Remove handler."""
-        self._logger.removeHandler(handler)
-    
-    def clear_handlers(self):
-        """Clear all handlers."""
-        self._logger.handlers.clear()
-    
     def get_logger(self) -> 'logging._logger':
         """Get the underlying logger instance."""
         if self._logger is None:
             self._setup_default_logger()
         return self._logger
     
-    def create_child_logger(self, name: str) -> 'logging._logger':
-        # """Create child logger."""
-        # return self._logger.getChild(name)
-        """Create child logger with unique name for parallel tests."""
-        if self._logger is None:
-            self._setup_default_logger()
-
-        child_name = f"{self._logger.name}.{name}.{threading.get_ident()}"
-        return self._logger.getChild(child_name)
-    
-    def log_dict(self, data: Dict[str, Any], title: str = "Data"):
-        """Log dictionary data in formatted way."""
-        self.info(f"📋 {title}:")
-        for key, value in data.items():
-            self.info(f"  {key}: {value}")
-    
-    def log_list(self, data: list, title: str = "List"):
-        """Log list data in formatted way."""
-        self.info(f"📋 {title}:")
-        for i, item in enumerate(data):
-            self.info(f"  [{i}]: {item}")
-    
-    def log_separator(self, char: str = "=", length: int = 50):
-        """Log separator line."""
-        self.info(char * length)
-    
-    def log_header(self, title: str, char: str = "=", length: int = 50):
-        """Log header with title."""
-        self.log_separator(char, length)
-        self.info(f" {title} ")
-        self.log_separator(char, length)
-    
-    def log_footer(self, title: str, char: str = "=", length: int = 50):
-        """Log footer with title."""
-        self.log_separator(char, length)
-        self.info(f" {title} ")
-        self.log_separator(char, length)
-    
-    def flush_logs(self):
-        """Flush all log handlers."""
-        for handler in self._logger.handlers:
-            handler.flush()
-    
-    def close_logs(self):
-        """Close all log handlers."""
-        for handler in self._logger.handlers:
-            handler.close()
-    
-    def get_log_statistics(self) -> Dict[str, Any]:
-        """Get log statistics."""
-        stats = {
-            "log_level": self.get_log_level(),
-            "handlers_count": len(self._logger.handlers),
-            "log_file": self.get_log_file_path()
-        }
-        
-        # Count log levels if possible
-        if hasattr(self._logger, 'handlers'):
-            for handler in self._logger.handlers:
-                if hasattr(handler, 'level'):
-                    stats[f"handler_{type(handler).__name__}_level"] = logging.getLevelName(handler.level)
-        
-        return stats

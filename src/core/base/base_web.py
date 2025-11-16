@@ -67,7 +67,8 @@ class BaseWeb(BaseTest):
         
     def take_screenshot(self, name: str = None):
         """Take screenshot."""
-        return self.screenshot_util.take_screenshot( name,self.page)
+        test_context = self.test_context if hasattr(self, 'test_context') else None
+        return self.screenshot_util.take_screenshot(name, self.page, test_context=test_context)
         
     def get_page_title(self) -> str:
         """Get page title."""

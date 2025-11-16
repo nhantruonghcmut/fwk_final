@@ -155,6 +155,14 @@ class TestContext:
     def get_environment(self) -> Optional[str]:
         """Get environment."""
         return self.get_test_info("environment")
+    
+    def set_browser_context_config(self, context_config: Dict[str, Any]):
+        """Set browser context configuration (viewport, user_agent, locale, etc.)."""
+        self.set("browser_context_config", context_config)
+        
+    def get_browser_context_config(self) -> Optional[Dict[str, Any]]:
+        """Get browser context configuration."""
+        return self.get("browser_context_config")
         
     def set_user_credentials(self, username: str, password: str):
         """Set user credentials."""
@@ -299,7 +307,7 @@ class TestContext:
     def get_context_info(self) -> Dict[str, Any]:
         """Get comprehensive context information."""
         with self._lock:
-            return {
+            info = {
                 "thread_id": self._thread_id,
                 "start_time": self._start_time.isoformat(),
                 "duration": self.get_duration(),
@@ -312,7 +320,22 @@ class TestContext:
                 "screenshots_count": len(self.get_screenshots()),
                 "performance_metrics_count": len(self.get_performance_metrics())
             }
+            # Include browser context config if available
+            browser_context_config = self.get_browser_context_config()
+            if browser_context_config:
+                info["browser_context_config"] = browser_context_config
+            return info
             
+    def get_next_snapshot_stt(self, test_id: str) -> int:
+        """Get next snapshot sequence number for a test ID and increment it."""
+        with self._lock:
+            snapshot_counters = self.get("snapshot_counters", {})
+            current_stt = snapshot_counters.get(test_id, 0)
+            next_stt = current_stt + 1
+            snapshot_counters[test_id] = next_stt
+            self.set("snapshot_counters", snapshot_counters)
+            return next_stt
+    
     def get_summary(self) -> Dict[str, Any]:
         """Get test summary."""
         return {

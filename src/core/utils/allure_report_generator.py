@@ -12,9 +12,9 @@ from src.core.utils.config_manager import ConfigManager
 class AllureReportGenerator:
     """Generator for Allure reports and attachments."""
     
-    def __init__(self):
-        self.logger = ReportLogger()
-        self.config_manager = ConfigManager( self.logger)
+    def __init__(self, logger: ReportLogger, config_manager: ConfigManager):
+        self.logger = logger
+        self.config_manager = config_manager
         self.results_dir = self.config_manager.get_allure_results_directory()
         self._ensure_results_directory()
         
@@ -41,25 +41,6 @@ class AllureReportGenerator:
             self.logger.warning("Allure not available, skipping attachment")
         except Exception as e:
             self.logger.log_error(e, "add_attachment")
-            
-    def add_screenshot_to_step(self, screenshot_path: str, step_name: str, description: str = "Screenshot"):
-        """Add screenshot to specific Allure step."""
-        try:
-            import allure
-            import os
-            
-            if os.path.exists(screenshot_path):
-                with allure.step(f"Screenshot: {description}"):
-                    with open(screenshot_path, 'rb') as f:
-                        allure.attach(f.read(), description, allure.attachment_type.PNG)
-                self.logger.info(f"Added screenshot to step '{step_name}': {description}")
-            else:
-                self.logger.warning(f"Screenshot file not found: {screenshot_path}")
-                
-        except ImportError:
-            self.logger.warning("Allure not available, skipping screenshot")
-        except Exception as e:
-            self.logger.log_error(e, "add_screenshot_to_step")
             
     def add_screenshot(self, screenshot_path: str, name: str = "Screenshot"):
         """Add screenshot to Allure report."""
@@ -438,7 +419,7 @@ class AllureReportGenerator:
             self.logger.log_error(e, "set_test_epic")
             
     def generate_report(self):
-        """Generate Allure report."""
+        """Generate Allure report.""" 
         try:
             if not self.config_manager.is_allure_enabled():
                 self.logger.info("Allure reporting is disabled")
@@ -446,33 +427,41 @@ class AllureReportGenerator:
                 
             report_dir = self.config_manager.get_allure_report_directory()
             
+            # Convert relative paths to absolute paths
+            from pathlib import Path
+            results_dir_abs = Path(self.results_dir).resolve()
+            report_dir_abs = Path(report_dir).resolve()
+            
             # Ensure directories exist
-            os.makedirs(self.results_dir, exist_ok=True)
-            os.makedirs(report_dir, exist_ok=True)
+            os.makedirs(results_dir_abs, exist_ok=True)
+            os.makedirs(report_dir_abs, exist_ok=True)
             
             # Check if results directory has any files
-            from pathlib import Path
-            results_path = Path(self.results_dir)
-            if not any(results_path.iterdir()):
-                self.logger.warning(f"No results found in {self.results_dir}. Skipping report generation.")
+            if not any(results_dir_abs.iterdir()):
+                self.logger.warning(f"No results found in {results_dir_abs}. Skipping report generation.")
                 return
             
             # Generate report using allure command
             import subprocess
+            import platform
             
             cmd = [
                 "allure", "generate",
-                self.results_dir,
-                "-o", report_dir,
+                str(results_dir_abs),
+                "-o", str(report_dir_abs),
                 "--single-file", "--clean"
             ]
             
             self.logger.info(f"Generating Allure report: {' '.join(cmd)}")
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            
+            # On Windows, use shell=True to ensure PATH is properly resolved
+            # This allows subprocess to find commands in PATH like cmd.exe does
+            use_shell = platform.system() == "Windows"
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, shell=use_shell)
             
             if result.returncode == 0:
-                report_file = os.path.join(report_dir, "index.html")
-                if os.path.exists(report_file):
+                report_file = report_dir_abs / "index.html"
+                if report_file.exists():
                     self.logger.info(f"Allure report generated successfully: {report_file}")
                 else:
                     self.logger.warning(f"Report file not found at expected location: {report_file}")
@@ -490,46 +479,4 @@ class AllureReportGenerator:
         except Exception as e:
             self.logger.log_error(e, "generate_report")
             
-    def open_report(self):
-        """Open Allure report in browser."""
-        try:
-            report_dir = self.config_manager.get_allure_report_directory()
             
-            if os.path.exists(report_dir):
-                import subprocess
-                import webbrowser
-                
-                # Try to open with allure serve
-                cmd = f"allure serve {self.results_dir}"
-                subprocess.Popen(cmd, shell=True)
-                
-                self.logger.info("Opening Allure report in browser")
-            else:
-                self.logger.warning("Allure report not found, generate it first")
-                
-        except Exception as e:
-            self.logger.log_error(e, "open_report")
-            
-    def get_report_info(self) -> Dict[str, Any]:
-        """Get Allure report information."""
-        try:
-            report_dir = self.config_manager.get_allure_report_directory()
-            
-            info = {
-                "results_directory": self.results_dir,
-                "report_directory": report_dir,
-                "results_exists": os.path.exists(self.results_dir),
-                "report_exists": os.path.exists(report_dir),
-                "allure_enabled": self.config_manager.is_allure_enabled()
-            }
-            
-            if os.path.exists(self.results_dir):
-                results_files = os.listdir(self.results_dir)
-                info["results_files_count"] = len(results_files)
-                info["results_files"] = results_files
-                
-            return info
-            
-        except Exception as e:
-            self.logger.log_error(e, "get_report_info")
-            return {}

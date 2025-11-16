@@ -1,5 +1,6 @@
 import pytest
 import allure
+import os
 import time
 from appium import webdriver
 from appium.webdriver.common.appiumby import AppiumBy
@@ -8,130 +9,11 @@ from src.project.page_object.mobile.note_app_base import IntroPage, HomeNotesPag
 
 
 
-@allure.parent_suite("App Mobile Tests")
+# @allure.parent_suite("App Mobile Tests Suite 1")
 class TestColorNote:  
       
-    @allure.feature("Note Management")
-    @allure.story("Create Checklist Note")
-    @allure.severity(allure.severity_level.CRITICAL)
-    @pytest.mark.colorApp
-    @allure.suite("Test ColorNote App")
-    def test_create_checklist_note_verify_items_and_count(self, appium_driver, data_test_add_checklistnote):
-        """Test creating a checklist note with title and 2 items, verify items count and notes count"""
-        data = data_test_add_checklistnote
-        allure.dynamic.title(data.get("test_name", "Create Checklist Note"))
-        allure.dynamic.description(f"Test ID: {data.get('test_id')}<br>Description: {data.get('description')}<br>Title: {data.get('title')}<br>Items: {', '.join(data.get('items', []))}")
-        allure.dynamic.label("test_id", data.get("test_id"))
-        
-        try:
-            with allure.step("Skip intro screen"):
-                intro = IntroPage(appium_driver)
-                intro.skip_intro_use()
-            
-            with allure.step("Navigate to home notes page"):
-                home_page = HomeNotesPage(appium_driver)
-            
-            with allure.step(f"Create new checklist note with title: '{data['title']}'"):
-                checklist_page = home_page.add_new_note_checklist()
-                checklist_page.enter_title(data['title'])
-                allure.attach(
-                    f"Title: {data['title']}",
-                    name="Checklist Title",
-                    attachment_type=allure.attachment_type.TEXT
-                )
-            
-            with allure.step(f"Add {len(data['items'])} checklist items"):
-                for index in range(len(data['items'])):
-                    item_text = data['items'][index]
-                    checklist_page.add_first_checklist_item(item_text)
-                    allure.attach(
-                        f"Item {index + 1}: {item_text}",
-                        name=f"Checklist Item {index + 1}",
-                        attachment_type=allure.attachment_type.TEXT
-                    )
-            checklist_page.click_to_view_checklist()
-            
-            with allure.step(f"Verify checklist items count equals {data['expected_items']}"):
-                actual_items = checklist_page.count_checklist_items()   
-                allure.attach(
-                    f"Expected items: {data['expected_items']}, Actual items: {actual_items}",
-                    name="Items Count",             
-                    attachment_type=allure.attachment_type.TEXT
-                )
-                print(f"Checklist items count: {actual_items}")
-                assert actual_items == data['expected_items'], \
-                    f"Expected {data['expected_items']} checklist items, but found {actual_items}"
-                allure.attach(
-                    f"Checklist items count: {actual_items}",
-                    name="Items Verification",
-                    attachment_type=allure.attachment_type.TEXT
-                )
-            
-            with allure.step("Save checklist and return to home"):
-                checklist_page.back_to_homenote()
-            
-            with allure.step(f"Verify notes count equals {data['expected_notes']}"):
-                actual_count = home_page.count_notes()
-                assert actual_count == data['expected_notes'], \
-                    f"Expected {data['expected_notes']} notes, but found {actual_count}"
-                allure.attach(
-                    f"Notes count: {actual_count}",
-                    name="Notes Verification",
-                    attachment_type=allure.attachment_type.TEXT
-                )
-        except Exception as e:
-            allure.dynamic.label("error", str(e))
-            raise
-
-        
     # @allure.feature("Note Management")
-    # @allure.story("Create Text Note")
-    # @allure.severity(allure.severity_level.CRITICAL)
-    # @pytest.mark.colorApp
-    # @allure.suite("Test ColorNote App")
-    # def test_create_text_note_verify_count(self, appium_driver, data_test_add_textnote):
-    #     """Test creating a text note with title and body, verify note count"""
-    #     data = data_test_add_textnote
-    #     allure.dynamic.title(data.get("test_name", "Create Text Note"))
-    #     allure.dynamic.description(f"Test ID: {data.get('test_id')}<br>Description: {data.get('description')}<br>Title: {data.get('title')}<br>Body: {data.get('body')}")
-    #     allure.dynamic.label("test_id", data.get("test_id"))
-        
-    #     try:
-    #         with allure.step("Skip intro screen"):
-    #             intro = IntroPage(appium_driver)
-    #             intro.skip_intro_use()
-            
-    #         with allure.step("Navigate to home notes page"):
-    #             home_page = HomeNotesPage(appium_driver)
-            
-    #         for item in data['notes']:
-    #             with allure.step(f"Create new text note with title: '{item['title']}'"):
-    #                 note_page = home_page.add_new_note_text()
-    #                 note_page.enter_title(item['title'])
-    #                 note_page.enter_body(item['body'])
-    #                 screenshot = note_page.take_screenshot(f"{data_test_add_textnote['test_id']}_textnote_{item['title']}")
-    #                 note_page.back_to_homenote()
-    #                 allure.attach(
-    #                     screenshot,
-    #                     name=f"Note Content - {item['title']}",
-    #                     attachment_type=allure.attachment_type.PNG
-    #                 )
-            
-    #         with allure.step(f"Verify notes count equals {data['expected_notes']}"):
-    #             actual_count = home_page.count_notes()
-    #             assert actual_count == data['expected_notes'], \
-    #                 f"Expected {data['expected_notes']} notes, but found {actual_count}"
-    #             allure.attach(
-    #                 f"Notes count: {actual_count}",
-    #                 name="Verification Result",
-    #                 attachment_type=allure.attachment_type.TEXT
-    #             )
-    #     except Exception as e:
-    #         allure.dynamic.label("error", str(e))
-    #         raise
-    
-    # @allure.feature("Note Management")
-    # @allure.story("Mutil action in Colornote")
+    # @allure.story("Create Checklist Note")
     # @allure.severity(allure.severity_level.CRITICAL)
     # @pytest.mark.colorApp
     # @allure.suite("Test ColorNote App")
@@ -171,6 +53,8 @@ class TestColorNote:
     #         checklist_page.click_to_view_checklist()
             
     #         with allure.step(f"Verify checklist items count equals {data['expected_items']}"):
+    #             screenshot = checklist_page.take_screenshot()
+    #             screenshot.attach_to_allure("Checklist Items Screenshot")
     #             actual_items = checklist_page.count_checklist_items()   
     #             allure.attach(
     #                 f"Expected items: {data['expected_items']}, Actual items: {actual_items}",
@@ -201,19 +85,18 @@ class TestColorNote:
     #     except Exception as e:
     #         allure.dynamic.label("error", str(e))
     #         raise
-    
-    
-    
+
+        
     @allure.feature("Note Management")
-    @allure.story("Mutil action in Colornote")
+    @allure.story("Create Text Note")
     @allure.severity(allure.severity_level.CRITICAL)
     @pytest.mark.colorApp
     @allure.suite("Test ColorNote App")
-    def test_complex_action(self, appium_driver, data_test_colornote_complex):
-        """Test creating a checklist note with title and 2 items, verify items count and notes count"""
-        data = data_test_colornote_complex
-        allure.dynamic.title(data.get("test_name", "Create Checklist Note"))
-        allure.dynamic.description(f"Test ID: {data.get('test_id')}<br>Description: {data.get('description')}<br>Title: {data.get('title')}<br>Items: {', '.join(data.get('items', []))}")
+    def test_create_text_note_verify_count(self, appium_driver, data_test_add_textnote):
+        """Test creating a text note with title and body, verify note count"""
+        data = data_test_add_textnote
+        allure.dynamic.title(data.get("test_name", "Create Text Note"))
+        allure.dynamic.description(f"Test ID: {data.get('test_id')}<br>Description: {data.get('description')}<br>Title: {data.get('title')}<br>Body: {data.get('body')}")
         allure.dynamic.label("test_id", data.get("test_id"))
         
         try:
@@ -224,154 +107,185 @@ class TestColorNote:
             with allure.step("Navigate to home notes page"):
                 home_page = HomeNotesPage(appium_driver)
             
-            with allure.step(f"Create new checklist note with title: '{data['title_checklistnote']}'"):
-                checklist_page = home_page.add_new_note_checklist()
-                checklist_page.enter_title(data['title_checklistnote'])
-                allure.attach(
-                    f"Title: {data['title_checklistnote']}",
-                    name="Checklist Title",
-                    attachment_type=allure.attachment_type.TEXT
-                )
+            for item in data['notes']:
+                with allure.step(f"Create new text note with title: '{item['title']}'"):
+                    note_page = home_page.add_new_note_text()
+                    note_page.enter_title(item['title'])
+                    note_page.enter_body(item['body'])
+                    screenshot = note_page.take_screenshot(f"{data_test_add_textnote['test_id']}_textnote_{item['title']}")
+                    note_page.back_to_homenote()
+                    screenshot.attach_to_allure(f"Note Content - {item['title']}")
             
-            with allure.step(f"Add {len(data['items'])} checklist items"):
-                for index in range(len(data['items'])):
-                    item_text = data['items'][index]
-                    checklist_page.add_first_checklist_item(item_text)
-                    allure.attach(
-                        f"Item {index + 1}: {item_text}",
-                        name=f"Checklist Item {index + 1}",
-                        attachment_type=allure.attachment_type.TEXT
-                    )
-            checklist_page.click_to_view_checklist()
-            
-            with allure.step(f"Verify checklist items count equals {data['expected_items_1st']}"):
-                actual_items = checklist_page.count_checklist_items()   
-                allure.attach(
-                    f"Expected items: {data['expected_items_1st']}, Actual items: {actual_items}",
-                    name="Items Count",             
-                    attachment_type=allure.attachment_type.TEXT
-                )
-                print(f"Checklist items count: {actual_items}")
-                assert actual_items == data['expected_items_1st'], \
-                    f"Expected {data['expected_items_1st']} checklist items, but found {actual_items}"
-                allure.attach(
-                    f"Checklist items count: {actual_items}",
-                    name="Items Verification",
-                    attachment_type=allure.attachment_type.TEXT
-                )
-            checklist_page.click_to_edit_checklist()
-            with allure.step(f"Add item at last: '{data['items_last']}'"):
-                checklist_page.add_last_checklist_item(data['items_last'])
-                screenshot = checklist_page.take_screenshot("checklist_add_last")
-                allure.attach(
-                    screenshot,
-                    name="Add Item Last",
-                    attachment_type=allure.attachment_type.PNG
-                )
-            with allure.step(f"Change order of item '{data['items_last']}' to position 1"):
-                checklist_page.change_order_item(data['items_last'], 1)
-                screenshot = checklist_page.take_screenshot("checklist_reorder")
-                allure.attach(
-                    screenshot,
-                    name="Checklist Reorder Screenshot",
-                    attachment_type=allure.attachment_type.PNG
-                )
-                
-            with allure.step(f"Long tap to get menu item"):
-                checklist_page.longtap_item(data['items_last'])
-                checklist_page.tap_menu_checklist_item('Remove')
-
-            with allure.step("Delete 2 item"):
-                checklist_page.delete_checklist_item(data['items'][1])
-                checklist_page.delete_checklist_item(data['items'][3])
-                screenshot = checklist_page.take_screenshot("checklist_deletion")
-                allure.attach(
-                    f"Deleted checklist items: {data['items'][1]}, {data['items'][3]}",
-                    name="Deleted Checklist Items",
-                    attachment_type=allure.attachment_type.TEXT
-                )
-                allure.attach(
-                    screenshot,
-                    name="Checklist Deletion Screenshot",
-                    attachment_type=allure.attachment_type.PNG
-                )
-            with allure.step("Assert checklist deletion"):
-                actual_items = checklist_page.count_checklist_items()
-                allure.attach(
-                    f"Expected items: {data['expected_items_2nd']}, Actual items: {actual_items}",
-                    name="Items Count",
-                    attachment_type=allure.attachment_type.TEXT
-                )
-                assert actual_items == data['expected_items_2nd'], \
-                    f"Expected {data['expected_items_2nd']} checklist items, but found {actual_items}"
-            
-            with allure.step("Save checklist and return to home"):
-                checklist_page.back_to_homenote()
-            
-            with allure.step(f"Verify notes count equals {data['expected_notes_1st']}"):
+            with allure.step(f"Verify notes count equals {data['expected_notes']}"):
                 actual_count = home_page.count_notes()
-                assert actual_count == data['expected_notes_1st'], \
-                    f"Expected {data['expected_notes_1st']} notes, but found {actual_count}"
-                allure.attach(
-                    f"Notes count: {actual_count}",
-                    name="Notes Verification",
-                    attachment_type=allure.attachment_type.TEXT
-                )
-            with allure.step(f"Create new text note with title: '{data['title_textnote']}'"):
-                note_page = home_page.add_new_note_text()
-                note_page.enter_title(data['title_textnote'])
-                note_page.enter_body(data['body_textnote'])
-                allure.attach(
-                    f"Title: {data['title_textnote']}\nBody: {data['body_textnote']}",
-                    name="Note Content",
-                    attachment_type=allure.attachment_type.TEXT
-                )
-            
-            with allure.step("Save note and return to home"):
-                note_page.back_to_homenote()
-            
-            with allure.step(f"Verify notes count equals {data['expected_notes_2nd']}"):
-                actual_count = home_page.count_notes()
-                assert actual_count == data['expected_notes_2nd'], \
-                    f"Expected {data['expected_notes_2nd']} notes, but found {actual_count}"
+                assert actual_count == data['expected_notes'], \
+                    f"Expected {data['expected_notes']} notes, but found {actual_count}"
                 allure.attach(
                     f"Notes count: {actual_count}",
                     name="Verification Result",
                     attachment_type=allure.attachment_type.TEXT
                 )
-            with allure.step('Delete note by Longtap and botton Menu '):
-                home_page.longtap_note_have_title(data['title_textnote'])
-                home_page.tap_bot_menu_option('Delete')
-                allure.attach(
-                    f"Delete {data['title_textnote']} by Longtap and botton Menu",
-                    name="Delete note",
-                    attachment_type=allure.attachment_type.TEXT
-                )
-                home_page.longtap_note_have_title(data['title_checklistnote'])
-                home_page.tap_bot_menu_option('Delete')
-                allure.attach(
-                    f"Delete {data['title_checklistnote']} by Longtap and botton Menu",
-                    name="Delete note",
-                    attachment_type=allure.attachment_type.TEXT
-                )
-            with allure.step(f"Verify checklist items count equals {data['expected_items_1st']}"):
-                actual_items = home_page.count_notes()   
-                allure.attach(
-                    f"Expected items: 0, Actual items: {actual_items}",
-                    name="Items Count",             
-                    attachment_type=allure.attachment_type.TEXT
-                )
-                print(f"Checklist items count: {actual_items}")
-                assert actual_items == 0, \
-                    f"Expected 0 checklist items, but found {actual_items}"
-                allure.attach(
-                    f"Checklist items count: {actual_items}",
-                    name="Items Verification",
-                    attachment_type=allure.attachment_type.TEXT
-                )
         except Exception as e:
             allure.dynamic.label("error", str(e))
             raise
+    
+
+    # @allure.feature("Note Management")
+    # @allure.story("Mutil action in Colornote")
+    # @allure.severity(allure.severity_level.CRITICAL)
+    # @pytest.mark.colorApp
+    # @allure.suite("Test ColorNote App")
+    # def test_complex_action(self, appium_driver, data_test_colornote_complex):
+    #     """Test creating a checklist note with title and 2 items, verify items count and notes count"""
+    #     data = data_test_colornote_complex
+    #     allure.dynamic.title(data.get("test_name", "Create Checklist Note"))
+    #     allure.dynamic.description(f"Test ID: {data.get('test_id')}<br>Description: {data.get('description')}<br>Title: {data.get('title')}<br>Items: {', '.join(data.get('items', []))}")
+    #     allure.dynamic.label("test_id", data.get("test_id"))
+        
+    #     try:
+    #         with allure.step("Skip intro screen"):
+    #             intro = IntroPage(appium_driver)
+    #             intro.skip_intro_use()
+            
+    #         with allure.step("Navigate to home notes page"):
+    #             home_page = HomeNotesPage(appium_driver)
+            
+    #         with allure.step(f"Create new checklist note with title: '{data['title_checklistnote']}'"):
+    #             checklist_page = home_page.add_new_note_checklist()
+    #             checklist_page.enter_title(data['title_checklistnote'])
+    #             allure.attach(
+    #                 f"Title: {data['title_checklistnote']}",
+    #                 name="Checklist Title",
+    #                 attachment_type=allure.attachment_type.TEXT
+    #             )
+            
+    #         with allure.step(f"Add {len(data['items'])} checklist items"):
+    #             for index in range(len(data['items'])):
+    #                 item_text = data['items'][index]
+    #                 checklist_page.add_first_checklist_item(item_text)
+    #                 allure.attach(
+    #                     f"Item {index + 1}: {item_text}",
+    #                     name=f"Checklist Item {index + 1}",
+    #                     attachment_type=allure.attachment_type.TEXT
+    #                 )
+    #         checklist_page.click_to_view_checklist()
+            
+    #         with allure.step(f"Verify checklist items count equals {data['expected_items_1st']}"):
+    #             actual_items = checklist_page.count_checklist_items()   
+    #             allure.attach(
+    #                 f"Expected items: {data['expected_items_1st']}, Actual items: {actual_items}",
+    #                 name="Items Count",             
+    #                 attachment_type=allure.attachment_type.TEXT
+    #             )
+    #             print(f"Checklist items count: {actual_items}")
+    #             assert actual_items == data['expected_items_1st'], \
+    #                 f"Expected {data['expected_items_1st']} checklist items, but found {actual_items}"
+    #             allure.attach(
+    #                 f"Checklist items count: {actual_items}",
+    #                 name="Items Verification",
+    #                 attachment_type=allure.attachment_type.TEXT
+    #             )
+    #         checklist_page.click_to_edit_checklist()
+    #         with allure.step(f"Add item at last: '{data['items_last']}'"):
+    #             checklist_page.add_last_checklist_item(data['items_last'])
+    #             screenshot = checklist_page.take_screenshot()
+    #             screenshot.attach_to_allure("Add Item Last")
+    #         with allure.step(f"Change order of item '{data['items_last']}' to position 1"):
+    #             checklist_page.change_order_item(data['items_last'], 1)
+    #             screenshot = checklist_page.take_screenshot()
+    #             screenshot.attach_to_allure("Checklist Reorder Screenshot")
+                
+    #         with allure.step(f"Long tap to get menu item"):
+    #             checklist_page.longtap_item(data['items_last'])
+    #             checklist_page.tap_menu_checklist_item('Remove')
+
+    #         with allure.step("Delete 2 item"):
+    #             checklist_page.delete_checklist_item(data['items'][1])
+    #             checklist_page.delete_checklist_item(data['items'][3])
+    #             screenshot = checklist_page.take_screenshot()
+    #             allure.attach(
+    #                 f"Deleted checklist items: {data['items'][1]}, {data['items'][3]}",
+    #                 name="Deleted Checklist Items",
+    #                 attachment_type=allure.attachment_type.TEXT
+    #             )
+    #             screenshot.attach_to_allure("Checklist Deletion Screenshot")
+    #         with allure.step("Assert checklist deletion"):
+    #             actual_items = checklist_page.count_checklist_items()
+    #             allure.attach(
+    #                 f"Expected items: {data['expected_items_2nd']}, Actual items: {actual_items}",
+    #                 name="Items Count",
+    #                 attachment_type=allure.attachment_type.TEXT
+    #             )
+    #             assert actual_items == data['expected_items_2nd'], \
+    #                 f"Expected {data['expected_items_2nd']} checklist items, but found {actual_items}"
+            
+    #         with allure.step("Save checklist and return to home"):
+    #             checklist_page.back_to_homenote()
+            
+    #         with allure.step(f"Verify notes count equals {data['expected_notes_1st']}"):
+    #             actual_count = home_page.count_notes()
+    #             assert actual_count == data['expected_notes_1st'], \
+    #                 f"Expected {data['expected_notes_1st']} notes, but found {actual_count}"
+    #             allure.attach(
+    #                 f"Notes count: {actual_count}",
+    #                 name="Notes Verification",
+    #                 attachment_type=allure.attachment_type.TEXT
+    #             )
+    #         with allure.step(f"Create new text note with title: '{data['title_textnote']}'"):
+    #             note_page = home_page.add_new_note_text()
+    #             note_page.enter_title(data['title_textnote'])
+    #             note_page.enter_body(data['body_textnote'])
+    #             allure.attach(
+    #                 f"Title: {data['title_textnote']}\nBody: {data['body_textnote']}",
+    #                 name="Note Content",
+    #                 attachment_type=allure.attachment_type.TEXT
+    #             )
+            
+    #         with allure.step("Save note and return to home"):
+    #             note_page.back_to_homenote()
+            
+    #         with allure.step(f"Verify notes count equals {data['expected_notes_2nd']}"):
+    #             actual_count = home_page.count_notes()
+    #             assert actual_count == data['expected_notes_2nd'], \
+    #                 f"Expected {data['expected_notes_2nd']} notes, but found {actual_count}"
+    #             allure.attach(
+    #                 f"Notes count: {actual_count}",
+    #                 name="Verification Result",
+    #                 attachment_type=allure.attachment_type.TEXT
+    #             )
+    #         with allure.step('Delete note by Longtap and botton Menu '):
+    #             home_page.longtap_note_have_title(data['title_textnote'])
+    #             home_page.tap_bot_menu_option('Delete')
+    #             allure.attach(
+    #                 f"Delete {data['title_textnote']} by Longtap and botton Menu",
+    #                 name="Delete note",
+    #                 attachment_type=allure.attachment_type.TEXT
+    #             )
+    #             home_page.longtap_note_have_title(data['title_checklistnote'])
+    #             home_page.tap_bot_menu_option('Delete')
+    #             allure.attach(
+    #                 f"Delete {data['title_checklistnote']} by Longtap and botton Menu",
+    #                 name="Delete note",
+    #                 attachment_type=allure.attachment_type.TEXT
+    #             )
+    #         with allure.step(f"Verify checklist items count equals {data['expected_items_1st']}"):
+    #             actual_items = home_page.count_notes()   
+    #             allure.attach(
+    #                 f"Expected items: 0, Actual items: {actual_items}",
+    #                 name="Items Count",             
+    #                 attachment_type=allure.attachment_type.TEXT
+    #             )
+    #             print(f"Checklist items count: {actual_items}")
+    #             assert actual_items == 0, \
+    #                 f"Expected 0 checklist items, but found {actual_items}"
+    #             allure.attach(
+    #                 f"Checklist items count: {actual_items}",
+    #                 name="Items Verification",
+    #                 attachment_type=allure.attachment_type.TEXT
+    #             )
+    #     except Exception as e:
+    #         allure.dynamic.label("error", str(e))
+    #         raise
 
 
 

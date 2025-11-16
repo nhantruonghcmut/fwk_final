@@ -13,6 +13,8 @@ from src.core.base.base_test import BaseTest
 from src.core.utils.mobile_action import MobileActions
 from src.core.utils.element_object import ElementObject
 from src.core.utils.report_logger import ReportLogger
+from src.core.utils.screenshot_util import ScreenshotUtil
+from src.core.utils.mobile_retry import retry_on_connection_error
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -25,25 +27,36 @@ class BaseMobile(BaseTest):
     def __init__(self, driver: webdriver.Remote):
         super().__init__()
         self.driver = driver
+        self.test_context = getattr(driver, "test_context", None)
         self.mobile_actions = MobileActions(driver)
         self.logger = ReportLogger()
+        self.screenshot_util = ScreenshotUtil()
         self.default_timeout = 30 
 
     # ----------------- Element helpers (return ElementObject) -----------------
     def get_element(self, locator: Tuple[str, str], timeout: Optional[int] = None) -> ElementObject:
-        """Get element by locator tuple (strategy, value) - wait until present."""
+        """
+        Get element by locator tuple (strategy, value) - wait until present.
+        
+        Note: No retry wrapper here - WebDriverWait already handles timeouts.
+        Retry should only be used for actual connection errors, not for element finding.
+        """
         element = WebDriverWait(self.driver, timeout or self.default_timeout).until(
             EC.presence_of_element_located(locator)
         )
-        return ElementObject(element,self.driver)
+        return ElementObject(element, self.driver)
         
     def get_elements(self, locator: Tuple[str, str], timeout: Optional[int] = None) -> List[ElementObject]:
-        """Get multiple elements by locator tuple - wait until at least one present."""
+        """
+        Get multiple elements by locator tuple - wait until at least one present.
+        
+        Note: No retry wrapper here - WebDriverWait already handles timeouts.
+        """
         WebDriverWait(self.driver, timeout or self.default_timeout).until(
             EC.presence_of_all_elements_located(locator)
         )
         elements = self.driver.find_elements(*locator)
-        return [ElementObject(element,self.driver) for element in elements]
+        return [ElementObject(element, self.driver) for element in elements]
         
     def find_element_by_id(self, element_id: str, timeout: Optional[int] = None) -> ElementObject:
         """Find element by ID - wait until present."""
@@ -53,10 +66,10 @@ class BaseMobile(BaseTest):
                 EC.presence_of_element_located(locator)
             )
             self.logger.info(f"Found element by ID: {element_id}")
-            return ElementObject(element,self.driver)
+            return ElementObject(element, self.driver)
         except Exception as e:
             self.logger.error(f"Failed to find element by ID: {element_id}. Error: {str(e)}")
-            return None
+            raise
         
     def find_element_by_xpath(self, xpath: str, timeout: Optional[int] = None) -> ElementObject:
         """Find element by XPath - wait until present."""
@@ -66,10 +79,10 @@ class BaseMobile(BaseTest):
                 EC.presence_of_element_located(locator)
             )
             self.logger.info(f"Found element by XPath: {xpath}")
-            return ElementObject(element,self.driver)
+            return ElementObject(element, self.driver)
         except Exception as e:
             self.logger.error(f"Failed to find element by XPath: {xpath}. Error: {str(e)}")
-            return None
+            raise
         
     def find_element_by_class_name(self, class_name: str, timeout: Optional[int] = None) -> ElementObject:
         """Find element by class name - wait until present."""
@@ -79,10 +92,10 @@ class BaseMobile(BaseTest):
                 EC.presence_of_element_located(locator)
             )
             self.logger.info(f"Found element by class name: {class_name}")
-            return ElementObject(element,self.driver)
+            return ElementObject(element, self.driver)
         except Exception as e:
             self.logger.error(f"Failed to find element by class name: {class_name}. Error: {str(e)}")
-            return None
+            raise
 
     def find_element_by_accessibility_id(self, accessibility_id: str, timeout: Optional[int] = None) -> ElementObject:
         """Find element by accessibility ID - wait until present."""
@@ -92,12 +105,11 @@ class BaseMobile(BaseTest):
                 EC.presence_of_element_located(locator)
             )
             self.logger.info(f"Found element by accessibility ID: {accessibility_id}")
-            return ElementObject(element,self.driver)
+            return ElementObject(element, self.driver)
         except Exception as e:
             self.logger.error(f"Failed to find element by accessibility ID: {accessibility_id}. Error: {str(e)}")
-            return None
+            raise
 
-        
     def find_element_by_text(self, text: str, timeout: Optional[int] = None) -> ElementObject:
         """Find element by exact text - wait until present."""
         try:
@@ -107,10 +119,10 @@ class BaseMobile(BaseTest):
                 EC.presence_of_element_located(locator)
             )
             self.logger.info(f"Found element by text: {text}")
-            return ElementObject(element,self.driver)
+            return ElementObject(element, self.driver)
         except Exception as e:
             self.logger.error(f"Failed to find element by text: {text}. Error: {str(e)}")
-            return None
+            raise
         
     def find_element_by_partial_text(self, partial_text: str, timeout: Optional[int] = None) -> ElementObject:
         """Find element by partial text - wait until present."""
@@ -121,10 +133,10 @@ class BaseMobile(BaseTest):
                 EC.presence_of_element_located(locator)
             )
             self.logger.info(f"Found element by partial text: {partial_text}")
-            return ElementObject(element,self.driver)
+            return ElementObject(element, self.driver)
         except Exception as e:
             self.logger.error(f"Failed to find element by partial text: {partial_text}. Error: {str(e)}")
-            return None
+            raise
 
     def wait_for_element(self, locator: Tuple[str, str], timeout: Optional[int] = None):
         element = self.mobile_actions.wait_for_element(locator, timeout or self.default_timeout)
@@ -138,10 +150,11 @@ class BaseMobile(BaseTest):
         element = self.mobile_actions.wait_for_element_clickable(locator, timeout or self.default_timeout)
         return ElementObject(element,self.driver)
         
-    def take_screenshot(self, name: str = "screenshot"):
+    def take_screenshot(self, name: str = None):
         """Take screenshot (device-level)."""
-        path = f"reports/screenshots/{name}.png"
-        return self.mobile_actions.take_screenshot(path)
+        test_context = getattr(self, 'test_context', None) or getattr(self.driver, 'test_context', None)
+        # self.logger.info(f" ^^^^^^^^^^^^^^^^^ Taking screenshot with test_context: {test_context}")
+        return self.screenshot_util.take_screenshot(name, driver=self.driver, test_context=test_context)
         
     def get_page_source(self) -> str:
         return self.mobile_actions.get_page_source()

@@ -280,10 +280,6 @@ class ConfigManager:
         """Get retry delay for current test."""
         return self.get_config_value('retry.delay', 1000)
     
-    def is_exponential_backoff_enabled(self) -> bool:
-        """Check if exponential backoff is enabled."""
-        return self.get_config_value('retry.exponential_backoff', True)
-    
     # ============================================
     # SCREENSHOT CONFIGURATION (Lazy Computed)
     # ============================================
@@ -296,21 +292,9 @@ class ConfigManager:
         """Check if screenshots should be taken on success."""
         return self.get_config_value('screenshots.on_success', False)
     
-    def should_take_screenshot_on_step(self) -> bool:
-        """Check if screenshots should be taken on each step."""
-        return self.get_config_value('screenshots.on_step', False)
-    
     def get_screenshot_directory(self) -> str:
         """Get screenshot directory for current test."""
         return self.get_config_value('screenshots.directory', 'reports/screenshots')
-    
-    def get_screenshot_format(self) -> str:
-        """Get screenshot format."""
-        return self.get_config_value('screenshots.format', 'png')
-    
-    def get_screenshot_quality(self) -> int:
-        """Get screenshot quality."""
-        return self.get_config_value('screenshots.quality', 95)
     
     # ============================================
     # EXECUTION CONFIGURATION (Lazy Computed)
@@ -380,16 +364,18 @@ class ConfigManager:
         return self.get_config_value('allure.report_dir', 'reports/allure-report')
 
     def should_clean_allure_on_start(self) -> bool:
-        """Check if should clean Allure results on start."""
-        return self.get_config_value('allure.clean_on_start', True)
-
-    def get_allure_title(self) -> str:
-        """Get Allure report title."""
-        return self.get_config_value('allure.title', 'Test Automation Report')
-
-    def get_allure_description(self) -> str:
-        """Get Allure report description."""
-        return self.get_config_value('allure.description', 'Test execution report')
+        """
+        Check if should clean Allure results on start.
+        Handles both boolean and string values from YAML.
+        """
+        value = self.get_config_value('allure.clean_on_start', True)
+        
+        # Handle string values (YAML might parse as string in some cases)
+        if isinstance(value, str):
+            return value.lower() in ('true', '1', 'yes', 'on')
+        
+        # Handle boolean values
+        return bool(value)
 
     # ============================================
     # LOAD TEST DATA
@@ -444,8 +430,47 @@ class ConfigManager:
         return self._environment
     
     def get_context_config(self) -> Dict[str, Any]:
-        """Get browser context configuration."""
-        return self.get_config_value('context', {})
+        """
+        Get browser context configuration from config.yaml.
+        Returns normalized context options ready for Playwright browser.new_context().
+        
+        Returns:
+            Dict containing context configuration (viewport, user_agent, locale, etc.)
+        """
+        context_config = self.get_config_value('context', {})
+        
+        # Normalize context config to ensure proper format
+        normalized = {}
+        
+        # Viewport: ensure it's a dict with width and height
+        if 'viewport' in context_config:
+            viewport = context_config['viewport']
+            if isinstance(viewport, dict):
+                normalized['viewport'] = viewport
+            elif isinstance(viewport, (list, tuple)) and len(viewport) >= 2:
+                normalized['viewport'] = {'width': viewport[0], 'height': viewport[1]}
+        
+        # User agent: string
+        if 'user_agent' in context_config:
+            normalized['user_agent'] = context_config['user_agent']
+        
+        # Locale: string
+        if 'locale' in context_config:
+            normalized['locale'] = context_config['locale']
+        
+        # Timezone ID: string
+        if 'timezone_id' in context_config:
+            normalized['timezone_id'] = context_config['timezone_id']
+        
+        # Permissions: list
+        if 'permissions' in context_config:
+            normalized['permissions'] = context_config['permissions']
+        
+        # Extra HTTP headers: dict
+        if 'extra_http_headers' in context_config:
+            normalized['extra_http_headers'] = context_config['extra_http_headers']
+        
+        return normalized
     
     def get_app_config(self, app_type: str) -> Dict[str, Any]:
         """Get application-specific configuration."""
@@ -462,6 +487,29 @@ class ConfigManager:
         """Get mobile configuration."""
         config = self.get_config()
         return config.get("mobile", {})
+    
+    def get_mobile_context_config(self) -> Dict[str, Any]:
+        """
+        Get mobile context configuration (timezone, locale).
+        Returns normalized config ready for Appium capabilities.
+        
+        Returns:
+            Dict containing mobile context configuration
+        """
+        mobile_config = self.get_mobile_config()
+        context_config = mobile_config.get("context", {})
+        
+        normalized = {}
+        
+        # Timezone: Android uses 'timeZone', iOS uses 'appTimeZone'
+        if 'timezone' in context_config:
+            normalized['timezone'] = context_config['timezone']
+        
+        # Locale: Both platforms use 'locale'
+        if 'locale' in context_config:
+            normalized['locale'] = context_config['locale']
+        
+        return normalized
         
     def get_web_config(self) -> Dict[str, Any]:
         """Get web configuration."""

@@ -15,6 +15,7 @@ from selenium.webdriver.common.actions.pointer_input import PointerInput
 from selenium.webdriver.common.actions.interaction import POINTER_TOUCH
 from appium.webdriver.webelement import WebElement 
 from src.core.utils.report_logger import ReportLogger
+from src.core.utils.mobile_retry import retry_on_connection_error, check_driver_health
 
 
 class MobileActions:
@@ -613,9 +614,14 @@ class MobileActions:
             self.logger.log_error(e, "is_selected")
             return False
     
+    @retry_on_connection_error()
     def wait_for_element(self, locator: Tuple[str, str], timeout_default: int = 30):
         """Wait for element to be present."""
         try:
+            # Check driver health before operation
+            if not check_driver_health(self.driver):
+                self.logger.warning("[RETRY] Driver session appears unhealthy, attempting operation anyway...")
+            
             self.logger.log_action("wait_for_element", str(locator))
             from selenium.webdriver.support.ui import WebDriverWait
             from selenium.webdriver.support import expected_conditions as EC
@@ -627,9 +633,14 @@ class MobileActions:
             self.logger.log_error(e, "wait_for_element")
             raise
     
+    @retry_on_connection_error()
     def wait_for_element_visible(self, locator: Tuple[str, str], timeout: int = 30):
         """Wait for element to be visible."""
         try:
+            # Check driver health before operation
+            if not check_driver_health(self.driver):
+                self.logger.warning("[RETRY] Driver session appears unhealthy, attempting operation anyway...")
+            
             self.logger.log_action("wait_for_element_visible", str(locator))
             from selenium.webdriver.support.ui import WebDriverWait
             from selenium.webdriver.support import expected_conditions as EC
@@ -641,9 +652,14 @@ class MobileActions:
             self.logger.log_error(e, "wait_for_element_visible")
             raise
     
+    @retry_on_connection_error()
     def wait_for_element_clickable(self, locator: Tuple[str, str], timeout: int = 30):
         """Wait for element to be clickable."""
         try:
+            # Check driver health before operation
+            if not check_driver_health(self.driver):
+                self.logger.warning("[RETRY] Driver session appears unhealthy, attempting operation anyway...")
+            
             self.logger.log_action("wait_for_element_clickable", str(locator))
             from selenium.webdriver.support.ui import WebDriverWait
             from selenium.webdriver.support import expected_conditions as EC
@@ -1181,9 +1197,14 @@ class MobileActions:
             self.logger.log_error(e, "execute_script")
             raise
     
+    @retry_on_connection_error()
     def find_element_by_id(self, element_id: str):
         """Find element by ID."""
         try:
+            # Check driver health before operation
+            if not check_driver_health(self.driver):
+                self.logger.warning("[RETRY] Driver session appears unhealthy, attempting operation anyway...")
+            
             self.logger.log_action("find_element_by_id", "", element_id)
             element = self.driver.find_element(AppiumBy.ID, element_id)
             return element
@@ -1191,9 +1212,14 @@ class MobileActions:
             self.logger.log_error(e, "find_element_by_id")
             raise
     
+    @retry_on_connection_error()
     def find_element_by_xpath(self, xpath: str):
         """Find element by XPath."""
         try:
+            # Check driver health before operation
+            if not check_driver_health(self.driver):
+                self.logger.warning("[RETRY] Driver session appears unhealthy, attempting operation anyway...")
+            
             self.logger.log_action("find_element_by_xpath", "", xpath)
             element = self.driver.find_element(AppiumBy.XPATH, xpath)
             return element
@@ -1201,9 +1227,14 @@ class MobileActions:
             self.logger.log_error(e, "find_element_by_xpath")
             raise
     
+    @retry_on_connection_error()
     def find_element_by_class_name(self, class_name: str):
         """Find element by class name."""
         try:
+            # Check driver health before operation
+            if not check_driver_health(self.driver):
+                self.logger.warning("[RETRY] Driver session appears unhealthy, attempting operation anyway...")
+            
             self.logger.log_action("find_element_by_class_name", "", class_name)
             element = self.driver.find_element(AppiumBy.CLASS_NAME, class_name)
             return element
@@ -1211,9 +1242,14 @@ class MobileActions:
             self.logger.log_error(e, "find_element_by_class_name")
             raise
     
+    @retry_on_connection_error()
     def find_element_by_accessibility_id(self, accessibility_id: str):
         """Find element by accessibility ID."""
         try:
+            # Check driver health before operation
+            if not check_driver_health(self.driver):
+                self.logger.warning("[RETRY] Driver session appears unhealthy, attempting operation anyway...")
+            
             self.logger.log_action("find_element_by_accessibility_id", "", accessibility_id)
             element = self.driver.find_element(AppiumBy.ACCESSIBILITY_ID, accessibility_id)
             return element
@@ -1221,9 +1257,14 @@ class MobileActions:
             self.logger.log_error(e, "find_element_by_accessibility_id")
             raise
     
+    @retry_on_connection_error()
     def find_element_by_text(self, text: str):
         """Find element by text."""
         try:
+            # Check driver health before operation
+            if not check_driver_health(self.driver):
+                self.logger.warning("[RETRY] Driver session appears unhealthy, attempting operation anyway...")
+            
             self.logger.log_action("find_element_by_text", "", text)
             element = self.driver.find_element(AppiumBy.XPATH, f"//*[@text='{text}']")
             return element
@@ -1231,9 +1272,14 @@ class MobileActions:
             self.logger.log_error(e, "find_element_by_text")
             raise
     
+    @retry_on_connection_error()
     def find_element_by_partial_text(self, partial_text: str):
         """Find element by partial text."""
         try:
+            # Check driver health before operation
+            if not check_driver_health(self.driver):
+                self.logger.warning("[RETRY] Driver session appears unhealthy, attempting operation anyway...")
+            
             self.logger.log_action("find_element_by_partial_text", "", partial_text)
             element = self.driver.find_element(AppiumBy.XPATH, f"//*[contains(@text,'{partial_text}')]")
             return element
@@ -1241,9 +1287,14 @@ class MobileActions:
             self.logger.log_error(e, "find_element_by_partial_text")
             raise
     
+    @retry_on_connection_error()
     def find_elements(self, locator: Tuple[str, str]) -> List:
         """Find multiple elements by locator."""
         try:
+            # Check driver health before operation
+            if not check_driver_health(self.driver):
+                self.logger.warning("[RETRY] Driver session appears unhealthy, attempting operation anyway...")
+            
             self.logger.log_action("find_elements", str(locator))
             elements = self.driver.find_elements(*locator)
             self.logger.log_action("find_elements_result", str(locator), str(len(elements)))
