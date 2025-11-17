@@ -18,9 +18,10 @@ class ElementObject:
     
     def __init__(self, element: Union[PlaywrightLocator, AppiumWebElement], root_driver: Any = None):
         self.element = element
-        self.logger = ReportLogger()
         self.root_driver = root_driver or self._extract_driver(element)
         self.element_type = self._detect_element_type()
+        # Get logger from root_driver/page (set in conftest) instead of creating new one
+        self.logger = getattr(self.root_driver, "logger", ReportLogger())
         self.action
     
     @property
@@ -261,42 +262,77 @@ class ElementObject:
             self.logger.log_error(e, "is_selected")
             return False
     
+    def _get_default_timeout(self) -> int:
+        """Get default timeout from root_driver/page (set in conftest)."""
+        if self.element_type == "playwright":
+            # Playwright uses milliseconds
+            return getattr(self.root_driver, "element_timeout", getattr(self.root_driver, "default_timeout", 30000))
+        else:
+            # Appium uses seconds, but we'll return in seconds and convert later if needed
+            element_timeout = getattr(self.root_driver, "element_timeout", None)
+            if element_timeout:
+                return element_timeout
+            default_timeout = getattr(self.root_driver, "default_timeout", 30)
+            return default_timeout
+    
     @step_decorator("Wait for element to be visible")
-    def wait_for_visible(self, timeout: int = 30000):
+    def wait_for_visible(self, timeout: Optional[int] = None):
         """Wait for element to be visible."""
         try:
+            # Get timeout from root_driver/page if not provided
+            if timeout is None:
+                timeout = self._get_default_timeout()
+            
             if self.element_type == "playwright":
+                # Use native Playwright element method (better than action for existing element)
                 self.element.wait_for(state="visible", timeout=timeout)
             else:
+                # MobileActions only supports waiting by locator, not by existing element
+                # So we use WebDriverWait directly for element that already exists
                 from selenium.webdriver.support.ui import WebDriverWait
                 from selenium.webdriver.support import expected_conditions as EC
-                WebDriverWait(self.element._parent, timeout/1000).until(EC.visibility_of(self.element))
+                timeout_seconds = timeout if timeout < 1000 else timeout / 1000
+                WebDriverWait(self.element._parent, timeout_seconds).until(EC.visibility_of(self.element))
         except Exception as e:
             self.logger.log_error(e, "wait_for_visible")
             raise
     
     @step_decorator("Wait for element to be hidden")
-    def wait_for_hidden(self, timeout: int = 30000):
+    def wait_for_hidden(self, timeout: Optional[int] = None):
         """Wait for element to be hidden."""
         try:
+            # Get timeout from root_driver/page if not provided
+            if timeout is None:
+                timeout = self._get_default_timeout()
+            
             if self.element_type == "playwright":
+                # Use native Playwright element method (better than action for existing element)
                 self.element.wait_for(state="hidden", timeout=timeout)
             else:
+                # MobileActions only supports waiting by locator, not by existing element
+                # So we use WebDriverWait directly for element that already exists
                 from selenium.webdriver.support.ui import WebDriverWait
                 from selenium.webdriver.support import expected_conditions as EC
-                WebDriverWait(self.element._parent, timeout/1000).until(EC.invisibility_of_element(self.element))
+                timeout_seconds = timeout if timeout < 1000 else timeout / 1000
+                WebDriverWait(self.element._parent, timeout_seconds).until(EC.invisibility_of_element(self.element))
         except Exception as e:
             self.logger.log_error(e, "wait_for_hidden")
             raise
 
     @step_decorator("Wait for text in element")
-    def wait_for_text(self, text: str, timeout: int = 30000):
+    def wait_for_text(self, text: str, timeout: Optional[int] = None):
         """Wait for text to appear within this element. This is unified for both Playwright and Appium."""
         try:
+            # Get timeout from root_driver/page if not provided
+            if timeout is None:
+                timeout = self._get_default_timeout()
+            
             self.logger.log_action("wait_for_text", str(self.element), text)
             
+            # Convert to seconds for time-based operations
+            timeout_seconds = timeout if timeout < 1000 else timeout / 1000
             start_time = time.time()
-            end_time = start_time + (timeout / 1000)
+            end_time = start_time + timeout_seconds
             
             while time.time() < end_time:
                 current_text = self.get_text()
@@ -316,8 +352,11 @@ class ElementObject:
         try:
             self.logger.log_action("scroll_into_view", str(self.element))
             if self.element_type == "playwright":
+                # Use native Playwright element method (better than action for existing element)
                 self.element.scroll_into_view_if_needed()
             else:
+                # MobileActions only supports scrolling by locator (scroll_to_element), not by existing element
+                # So we use execute_script directly for element that already exists
                 self.element._parent.execute_script("arguments[0].scrollIntoView(true);", self.element)
         except Exception as e:
             self.logger.log_error(e, "scroll_into_view")

@@ -33,7 +33,12 @@ class BaseMobile(BaseTest):
         self.mobile_actions = MobileActions(driver)
         self.logger = getattr(driver, "logger", ReportLogger())
         self.screenshot_util = getattr(driver, "screenshot_util", ScreenshotUtil(logger=self.logger))
-        self.default_timeout = 30 
+        # Get default timeout from driver (set in conftest with correct env/platform config)
+        self.default_timeout = getattr(driver, "default_timeout", 30)  # seconds
+        self.element_timeout = getattr(driver, "element_timeout", 15)  # seconds
+        
+        # Khởi tạo Verification sau khi đã có logger
+        self._init_verification(self.logger) 
 
     # ----------------- Element helpers (return ElementObject) -----------------
     @step_decorator("Get element")

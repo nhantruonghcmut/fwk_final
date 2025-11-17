@@ -13,7 +13,8 @@ class WebActions:
     
     def __init__(self, page: Page):
         self.page = page
-        self.logger = ReportLogger()
+        # Get logger from page (set in conftest) instead of creating new one
+        self.logger = getattr(page, "logger", ReportLogger())
         self.config_manager = ConfigManager(self.logger)
     
     def _effective_timeout(self, timeout: Optional[int] = None) -> int:

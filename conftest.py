@@ -19,6 +19,7 @@ from src.core.utils.test_context import TestContext
 from src.core.utils.report_logger import ReportLogger
 from src.core.utils.allure_environment_helper import AllureEnvironmentHelper
 from src.core.utils.allure_report_generator import AllureReportGenerator
+from src.core.utils.verification import Verification
 from src.core.browser.browser_factory import BrowserFactory
 from src.core.browser.browser_type import BrowserType
 from src.core.utils.screenshot_util import ScreenshotUtil
@@ -132,6 +133,24 @@ def pytest_configure(config):
     if environment:
         config_manager.set_environment(environment)
 
+    # ============================================
+    # 0. CONFIGURE SELENIUM/APPIUM LOGGING
+    # ============================================
+    # Tắt DEBUG log cho Selenium để tránh log binary image data
+    import logging
+    
+    # Tắt DEBUG log cho selenium remote_connection (tránh log base64 image data)
+    selenium_logger = logging.getLogger('selenium.webdriver.remote.remote_connection')
+    selenium_logger.setLevel(logging.WARNING)  # Chỉ log WARNING trở lên
+    
+    # Tắt DEBUG log cho appium nếu có
+    appium_logger = logging.getLogger('appium')
+    appium_logger.setLevel(logging.WARNING)
+    
+    # Tắt DEBUG log cho urllib3 (thư viện HTTP của Selenium)
+    urllib3_logger = logging.getLogger('urllib3')
+    urllib3_logger.setLevel(logging.WARNING)
+    
     # ============================================
     # 1. ALLURE SETTINGS
     # ============================================
@@ -327,10 +346,14 @@ def browser(request, browser_type, test_config) -> Generator[Page, None, None]:
         # Set timeout nếu cần
         default_timeout = config_manager.get_default_timeout()
         navigation_timeout = config_manager.get_navigation_timeout()
+        element_timeout = config_manager.get_element_timeout()
         page.set_default_timeout(default_timeout)
         page.set_default_navigation_timeout(navigation_timeout)
         setattr(page, "screenshot_util", screenshot_util)
         setattr(page, "logger", logger)
+        # Store timeout values in page for easy access
+        setattr(page, "default_timeout", default_timeout)
+        setattr(page, "element_timeout", element_timeout)
         # Log browser info và configuration
         try:
             browser_version = browser_obj.version if hasattr(browser_obj, 'version') else ""
@@ -701,6 +724,11 @@ def appium_driver(request, appium_service) -> Generator[webdriver.Remote, None, 
     setattr(driver, "test_context", test_context)
     setattr(driver, "screenshot_util", screenshot_util)
     setattr(driver, "logger", logger)
+    # Set timeout from config (mobile_config.yaml > config.yaml)
+    default_timeout_ms = config_manager.get_default_timeout()
+    element_timeout_ms = config_manager.get_element_timeout()
+    setattr(driver, "default_timeout", default_timeout_ms / 1000 if default_timeout_ms else 30)  # Convert to seconds for WebDriverWait
+    setattr(driver, "element_timeout", element_timeout_ms / 1000 if element_timeout_ms else 15)  # Convert to seconds
     # Yield driver outside lock to allow concurrent test execution
     try:
         yield driver
@@ -735,6 +763,18 @@ def app_urls(request, test_config) -> dict[str, str]:
         logger.warning("[WARNING] No URL configured")
     # logger.info(f"Base URLs: {base_urls}")
     return base_urls
+
+@pytest.fixture(scope="function")
+def verification():
+    """
+    Fixture providing Verification instance for tests.
+    Use this when you need verification outside of POM classes.
+    
+    Usage:
+        def test_something(self, verification):
+            verification.verify_equals(actual, expected, step_name="Verify count")
+    """
+    return Verification(logger=logger)
 
 # ============================================================================
 # PYTEST HOOKS

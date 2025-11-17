@@ -10,7 +10,7 @@ mobile:
   devices:
   - device_name: "emulator-5554"
     platform_name: "Android"
-    platform_version: "8.1"
+    platform_version: "11"
     automation_name: "UiAutomator2"
     udid: "emulator-5554"
     no_reset: false
@@ -21,7 +21,7 @@ mobile:
   
   - device_name: "emulator-5556"
     platform_name: "Android"
-    platform_version: "8.1"
+    platform_version: "11"
     automation_name: "UiAutomator2"
     udid: "emulator-5556"
     no_reset: false

@@ -45,6 +45,11 @@ class ScreenshotResult:
     def __str__(self) -> str:
         """Return path as string representation."""
         return self.path
+    
+    def __repr__(self) -> str:
+        """Return representation without binary data."""
+        binary_size = len(self.binary) if self.binary else 0
+        return f"ScreenshotResult(path='{self.path}', binary_size={binary_size} bytes)"
 
 
 class ScreenshotUtil:

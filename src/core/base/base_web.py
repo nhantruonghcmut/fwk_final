@@ -23,20 +23,27 @@ class BaseWeb(BaseTest):
         self.test_context = getattr(page, "test_context", None)
         self.logger = getattr(page, "logger", ReportLogger())
         self.screenshot_util = getattr(page, "screenshot_util", ScreenshotUtil(logger=self.logger))
+        # Get default timeout from page (set in conftest with correct env/platform config)
+        self.default_timeout = getattr(page, "default_timeout", 30000)  # milliseconds
+        self.element_timeout = getattr(page, "element_timeout", 10000)  # milliseconds
+        
+        # Khởi tạo Verification sau khi đã có logger
+        self._init_verification(self.logger)
 
-    def navigate_to(self, url: str, wait_until: str = "domcontentloaded", timeout: int = 30000):
+    def navigate_to(self, url: str, wait_until: str = "domcontentloaded", timeout: Optional[int] = None):
         """Navigate to a specific URL. 
            Option:
              wait_until: 'domcontentloaded' | 'networkidle'
-             timeout: int (milliseconds)
+             timeout: int (milliseconds), if None uses default from config
         """
         self.log_test_step(f"Navigating to: {url}")
+        effective_timeout = timeout or self.default_timeout
         # Delegate to WebActions to centralize logging/handling
         if wait_until == "domcontentloaded":
-            self.page.goto(url, wait_until=wait_until, timeout=timeout)
+            self.page.goto(url, wait_until=wait_until, timeout=effective_timeout)
         else:
             # For networkidle and others, reuse WebActions navigate for consistency
-            self.web_actions.navigate_to(url, wait_until=wait_until)
+            self.web_actions.navigate_to(url, wait_until=wait_until, timeout=effective_timeout)
 
     def get_title(self) -> str:
         return self.page.title()        
@@ -50,14 +57,15 @@ class BaseWeb(BaseTest):
         elements = self.page.locator(selector).all()
         return [ElementObject(element,self.page) for element in elements]
         
-    def wait_for_element(self, element_obj, timeout=30000, state="visible"):
+    def wait_for_element(self, element_obj, timeout: Optional[int] = None, state="visible"):
         """Wait for element to be in specified state."""
         try:
+            effective_timeout = timeout or self.default_timeout
             # Use the element directly instead of trying to access selector
             if hasattr(element_obj, "element"):
-                element_obj.element.wait_for(state=state, timeout=timeout)
+                element_obj.element.wait_for(state=state, timeout=effective_timeout)
             else:
-                self.page.wait_for_selector(element_obj, timeout=timeout, state=state)
+                self.page.wait_for_selector(element_obj, timeout=effective_timeout, state=state)
             return True
         except Exception as e:
             self.logger.error(f"Failed waiting for element {element_obj}: {str(e)}")
@@ -172,10 +180,12 @@ class BaseWeb(BaseTest):
         """Select radio button."""
         self.page.locator(selector).check()
         
-    def verify_element_present(self, selector: str) -> bool:
+    def verify_element_present(self, selector: str, timeout: Optional[int] = None) -> bool:
         """Verify element is present."""
         try:
-            self.page.locator(selector).wait_for(timeout=5000)
+            # Use element timeout from page (set in conftest) if not provided
+            element_timeout = timeout or self.element_timeout
+            self.page.locator(selector).wait_for(timeout=element_timeout)
             return True
         except:
             return False
@@ -211,15 +221,17 @@ class BaseWeb(BaseTest):
         return self.page.locator(selector).count()
         
     @step_decorator("Wait for text: {text}")
-    def wait_for_text(self, text: str, timeout: int = 30000):
+    def wait_for_text(self, text: str, timeout: Optional[int] = None):
         """Wait for text to appear."""
-        self.page.wait_for_selector(f"text={text}", timeout=timeout)
+        effective_timeout = timeout or self.default_timeout
+        self.page.wait_for_selector(f"text={text}", timeout=effective_timeout)
         
-    def wait_for_url_change(self, current_url: str, timeout: int = 30000):
+    def wait_for_url_change(self, current_url: str, timeout: Optional[int] = None):
         """Wait for URL to change."""
+        effective_timeout = timeout or self.default_timeout
         self.page.wait_for_function(
             f"() => window.location.href !== '{current_url}'",
-            timeout=timeout
+            timeout=effective_timeout
         )
     
     def save_login_session(self, session_file_path: str = None, session_name: str = "login_session"):

@@ -7,6 +7,7 @@ from typing import Dict, Any, Optional
 from src.core.utils.test_context import TestContext
 from src.core.utils.config_manager import ConfigManager
 from src.core.utils.report_logger import ReportLogger
+from src.core.utils.verification import Verification
 
 
 class BaseTest:
@@ -17,6 +18,18 @@ class BaseTest:
         self.config_manager: Optional[ConfigManager] = None
         self.logger: Optional[ReportLogger] = None
         self.test_data: Dict[str, Any] = {}
+        self.verify: Optional[Verification] = None  # Verification instance
+    
+    def _init_verification(self, logger: Optional[ReportLogger] = None):
+        """
+        Initialize Verification instance with logger.
+        Should be called after logger is set (e.g., in BaseMobile/BaseWeb.__init__).
+        
+        Args:
+            logger: ReportLogger instance. If None, uses self.logger or singleton.
+        """
+        logger_to_use = logger or self.logger or ReportLogger()
+        self.verify = Verification(logger=logger_to_use)
         
     def setup_test(self, config_loader: ConfigManager, test_context: TestContext):
         """Setup test environment with configuration and context."""

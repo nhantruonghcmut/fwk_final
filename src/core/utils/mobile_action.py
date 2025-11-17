@@ -24,7 +24,11 @@ class MobileActions:
     
     def __init__(self, driver: webdriver.Remote):
         self.driver = driver
-        self.logger = ReportLogger()
+        # Get logger from driver (set in conftest) instead of creating new one
+        self.logger = getattr(driver, "logger", ReportLogger())
+        # Get default timeout from driver (set in conftest with correct env/platform config)
+        self.default_timeout = getattr(driver, "default_timeout", 30)  # seconds
+        self.element_timeout = getattr(driver, "element_timeout", 15)  # seconds
         
     # ---------------- Platform helpers ----------------
     def get_platform(self) -> str:
