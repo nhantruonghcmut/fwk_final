@@ -50,9 +50,9 @@ class ScreenshotResult:
 class ScreenshotUtil:
     """Utility class for taking screenshots."""
     
-    def __init__(self):
-        self.logger = ReportLogger()
-        self.config_manager = ConfigManager( self.logger)
+    def __init__(self, logger: Optional[ReportLogger] = None, config_manager: Optional[ConfigManager] = None):
+        self.logger = logger if logger else ReportLogger()
+        self.config_manager = config_manager if config_manager else ConfigManager(self.logger)
         self.screenshot_dir = self.config_manager.get_screenshot_directory()
         self._ensure_screenshot_directory()
         

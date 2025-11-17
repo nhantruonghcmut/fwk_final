@@ -21,6 +21,7 @@ from src.core.utils.allure_environment_helper import AllureEnvironmentHelper
 from src.core.utils.allure_report_generator import AllureReportGenerator
 from src.core.browser.browser_factory import BrowserFactory
 from src.core.browser.browser_type import BrowserType
+from src.core.utils.screenshot_util import ScreenshotUtil
 from src.core.listener.test_listener import TestListener
 from src.core.listener.suite_listener import SuiteListener
 from appium.webdriver.appium_service import AppiumService
@@ -31,6 +32,7 @@ from src.core.utils.adb_util import ADBUtil
 logger = ReportLogger()
 config_manager = ConfigManager(logger)
 config_manager._load_base_configs()
+screenshot_util = ScreenshotUtil(logger, config_manager)
 browser_factory = BrowserFactory()
 allure_generator = AllureReportGenerator(logger, config_manager)
 suite_listener = SuiteListener(config_manager,browser_factory,logger, allure_generator)
@@ -327,7 +329,8 @@ def browser(request, browser_type, test_config) -> Generator[Page, None, None]:
         navigation_timeout = config_manager.get_navigation_timeout()
         page.set_default_timeout(default_timeout)
         page.set_default_navigation_timeout(navigation_timeout)
-        
+        setattr(page, "screenshot_util", screenshot_util)
+        setattr(page, "logger", logger)
         # Log browser info và configuration
         try:
             browser_version = browser_obj.version if hasattr(browser_obj, 'version') else ""
@@ -696,6 +699,8 @@ def appium_driver(request, appium_service) -> Generator[webdriver.Remote, None, 
         test_context.set_device_name(device_name)
         test_context.set_platform("mobile")
     setattr(driver, "test_context", test_context)
+    setattr(driver, "screenshot_util", screenshot_util)
+    setattr(driver, "logger", logger)
     # Yield driver outside lock to allow concurrent test execution
     try:
         yield driver
@@ -1013,97 +1018,7 @@ def pytest_sessionfinish(session, exitstatus):
                 logger.info(f"[ALLURE] Skipping report on worker: {workerid}")
                 return
     except (AttributeError, TypeError, KeyError):
-        pass
-    # # Generate Allure report (only on master process)
-    # if config_manager.is_allure_enabled():
-    #     try:
-    #         import subprocess
-    #         import os
-    #         from pathlib import Path
-            
-    #         results_dir = config_manager.get_allure_results_directory()
-    #         report_dir = config_manager.get_allure_report_directory()
-            
-    #         logger.info("=" * 60)
-    #         logger.info("[ALLURE] Starting report generation...")
-    #         logger.info(f"[ALLURE] Allure enabled: {config_manager.is_allure_enabled()}")
-    #         logger.info(f"[ALLURE] Results directory: {results_dir}")
-    #         logger.info(f"[ALLURE] Report directory: {report_dir}")
-            
-    #         # Ensure directories exist
-    #         os.makedirs(results_dir, exist_ok=True)
-    #         os.makedirs(report_dir, exist_ok=True)
-            
-    #         # Check if results directory exists and list files
-    #         results_path = Path(results_dir)
-    #         if not results_path.exists():
-    #             logger.warning(f"[ALLURE] ⚠️ Results directory does not exist: {results_dir}")
-    #             return
-            
-    #         # List all files in results directory
-    #         result_files = list(results_path.iterdir())
-    #         logger.info(f"[ALLURE] Found {len(result_files)} items in results directory")
-            
-    #         if not result_files:
-    #             logger.warning(f"[ALLURE] ⚠️ No results found in {results_dir}. Skipping report generation.")
-    #             logger.info(f"[ALLURE] Make sure tests are executed with Allure plugin enabled.")
-    #             return
-    #         import shutil
-
-    #         allure_path = shutil.which("allure")
-    #         if not allure_path:
-    #             logger.error(f"[ALLURE] ❌ Allure not found in PATH, current PATH {os.getcwd()}")
-    #             return
-
-    #         # Generate report
-    #         cmd = [
-    #                 "allure", "generate",
-    #                 results_dir,                 
-    #                 "-o", report_dir,
-    #                 "--single-file", "--clean"
-    #             ]
-            
-    #         logger.info(f"[ALLURE] Executing command: {' '.join(cmd)}")
-    #         try:
-    #             logger.error(f"[ALLURE&&&&&&&&&&&&&&&&&&&&&]current PATH {os.getcwd()}")
-    #             result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-  
-
-    #             if result.returncode == 0:
-    #                 report_file = os.path.join(report_dir, "index.html")
-    #                 if os.path.exists(report_file):
-    #                     file_size = os.path.getsize(report_file)
-    #                     logger.info(f"[ALLURE] ✅ Report generated successfully!")
-    #                     logger.info(f"[ALLURE] Report file: {report_file}")
-    #                     logger.info(f"[ALLURE] File size: {file_size:,} bytes")
-    #                     logger.info(f"[ALLURE] 🌐 Open with: file:///{os.path.abspath(report_file).replace(os.sep, '/')}")
-    #                 else:
-    #                     logger.warning(f"[ALLURE] ⚠️ Report file not found at expected location: {report_file}")
-    #                     # List files in report directory
-    #                     if os.path.exists(report_dir):
-    #                         report_files = list(Path(report_dir).iterdir())
-    #                         logger.info(f"[ALLURE] Files in report directory: {[f.name for f in report_files]}")
-    #             else:
-    #                 logger.error(f"[ALLURE] ❌ Failed to generate report (exit code: {result.returncode})")
-    #                 if result.stdout:
-    #                     logger.error(f"[ALLURE] stdout:\n{result.stdout}")
-    #                 if result.stderr:
-    #                     logger.error(f"[ALLURE] stderr:\n{result.stderr}")
-            
-    #             logger.info("=" * 60)
-            
-    #         except FileNotFoundError:
-    #             logger.error("[ALLURE] ❌ Allure CLI not found in PATH or node_modules")
-    #             logger.error("[ALLURE] Install options:")
-    #             logger.error("[ALLURE]   1. npm install allure-commandline")
-    #             logger.error("[ALLURE]   2. scoop install allure")
-    #             logger.error("[ALLURE]   3. Download from: https://github.com/allure-framework/allure2/releases")
-    #     except subprocess.TimeoutExpired:
-    #         logger.error("[ALLURE] ❌ Report generation timed out after 5 minutes")
-    #     except Exception as e:
-    #         logger.error(f"[ALLURE] ❌ Error generating report: {e}")
-    #         import traceback
-    #         logger.error(f"[ALLURE] Traceback:\n{traceback.format_exc()}")
+        pass   
 
 
 def pytest_collection_modifyitems(config, items):

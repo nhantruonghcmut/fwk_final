@@ -5,11 +5,12 @@ import os
 import time
 from playwright.sync_api import Page, Locator, expect
 from typing import Optional, List, Dict, Any
+from core.utils.allure_step import step_decorator
 from src.core.base.base_test import BaseTest
 from src.core.utils.web_action import WebActions
 from src.core.utils.element_object import ElementObject
 from src.core.utils.report_logger import ReportLogger
-from  src.core.utils.screenshot_util import ScreenshotUtil
+from  src.core.utils.screenshot_util import ScreenshotResult, ScreenshotUtil
 from typing import Union, Any
 
 class BaseWeb(BaseTest):
@@ -19,8 +20,9 @@ class BaseWeb(BaseTest):
         super().__init__()
         self.page = page
         self.web_actions = WebActions(page)
-        self.logger = ReportLogger()
-        self.screenshot_util = ScreenshotUtil()
+        self.test_context = getattr(page, "test_context", None)
+        self.logger = getattr(page, "logger", ReportLogger())
+        self.screenshot_util = getattr(page, "screenshot_util", ScreenshotUtil(logger=self.logger))
 
     def navigate_to(self, url: str, wait_until: str = "domcontentloaded", timeout: int = 30000):
         """Navigate to a specific URL. 
@@ -61,14 +63,18 @@ class BaseWeb(BaseTest):
             self.logger.error(f"Failed waiting for element {element_obj}: {str(e)}")
             return False
         
+    @step_decorator("Wait for page to load completely")
     def wait_for_page_load(self):
         """Wait for page to load completely."""
         self.page.wait_for_load_state("networkidle")
         
-    def take_screenshot(self, name: str = None):
+    def take_screenshot(self, name: str = None) -> ScreenshotResult:
         """Take screenshot."""
-        test_context = self.test_context if hasattr(self, 'test_context') else None
-        return self.screenshot_util.take_screenshot(name, self.page, test_context=test_context)
+        return self.screenshot_util.take_screenshot(name=name, page=self.page, test_context=self.test_context)
+    
+    def take_element_screenshot(self, element: Union[ElementObject, Locator], name: str = None) -> ScreenshotResult:
+        """Take screenshot of a specific element."""
+        return self.screenshot_util.take_element_screenshot(element=element, name=name, page=self.page, test_context=self.test_context)
         
     def get_page_title(self) -> str:
         """Get page title."""
@@ -204,6 +210,7 @@ class BaseWeb(BaseTest):
         """Get count of elements matching selector."""
         return self.page.locator(selector).count()
         
+    @step_decorator("Wait for text: {text}")
     def wait_for_text(self, text: str, timeout: int = 30000):
         """Wait for text to appear."""
         self.page.wait_for_selector(f"text={text}", timeout=timeout)

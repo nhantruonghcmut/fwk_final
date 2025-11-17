@@ -217,7 +217,7 @@ class SuiteListener:
             return []
             
     def _cleanup_suite(self):
-        """Cleanup after suite completion."""
+        """Cleanup after suite completion. ==> it's covered by finally cleanup in fixture"""        
         try:
             # Close all browsers
             self.browser_factory.close_all_browsers()

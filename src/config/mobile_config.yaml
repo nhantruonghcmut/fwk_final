@@ -4,13 +4,13 @@ mobile:
   
   parallel:
     enabled: true
-    workers: 3  # Override for mobile, should be equal to number of devices
+    workers: 2  # Override for mobile, should be equal to number of devices
     distribution: "loadgroup"  # Mobile cần group theo device
   
   devices:
   - device_name: "emulator-5554"
     platform_name: "Android"
-    platform_version: "11"
+    platform_version: "8.1"
     automation_name: "UiAutomator2"
     udid: "emulator-5554"
     no_reset: false
@@ -21,7 +21,7 @@ mobile:
   
   - device_name: "emulator-5556"
     platform_name: "Android"
-    platform_version: "11"
+    platform_version: "8.1"
     automation_name: "UiAutomator2"
     udid: "emulator-5556"
     no_reset: false
@@ -31,16 +31,16 @@ mobile:
     app_activity: "com.socialnmobile.dictapps.notepad.color.note/com.socialnmobile.colornote.activity.Main"
 
 
-  - device_name: "emulator-5558"
-    platform_name: "Android"
-    platform_version: "9.0"
-    automation_name: "UiAutomator2"
-    udid: "emulator-5558"
-    no_reset: false
-    full_reset: false
-    new_command_timeout: 300
-    app_package: "com.socialnmobile.dictapps.notepad.color.note"
-    app_activity: "com.socialnmobile.dictapps.notepad.color.note/com.socialnmobile.colornote.activity.Main"
+  # - device_name: "emulator-5558"
+  #   platform_name: "Android"
+  #   platform_version: "11"
+  #   automation_name: "UiAutomator2"
+  #   udid: "emulator-5558"
+  #   no_reset: false
+  #   full_reset: false
+  #   new_command_timeout: 300
+  #   app_package: "com.socialnmobile.dictapps.notepad.color.note"
+  #   app_activity: "com.socialnmobile.dictapps.notepad.color.note/com.socialnmobile.colornote.activity.Main"
 
   # - device_name: "emulator-5560"
   #   platform_name: "Android"

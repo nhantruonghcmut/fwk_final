@@ -2,21 +2,22 @@
 Mobile actions utility for Appium operations.
 """
 import time
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from typing import Any, Optional, List, Dict, Tuple, Union
+from appium.webdriver.webelement import WebElement 
 from appium import webdriver
 from appium.webdriver.common.appiumby import AppiumBy
 from appium.webdriver.extensions.action_helpers import ActionHelpers
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.common.actions import interaction
 from selenium.webdriver.common.actions.action_builder import ActionBuilder
 from selenium.webdriver.common.actions.pointer_input import PointerInput
 from selenium.webdriver.common.actions.interaction import POINTER_TOUCH
-from appium.webdriver.webelement import WebElement 
+from src.core.utils.screenshot_util import ScreenshotResult
 from src.core.utils.report_logger import ReportLogger
 from src.core.utils.mobile_retry import retry_on_connection_error, check_driver_health
-
+from src.core.utils.allure_step import step_decorator
 
 class MobileActions:
     """Utility class for mobile actions using Appium."""
@@ -38,6 +39,7 @@ class MobileActions:
     def is_ios(self) -> bool:
         return self.get_platform() == 'ios'
         
+    @step_decorator("Tap element:")
     def tap(self, locator: Union[Tuple[str, str], WebElement], **kwargs):
         """Tap element by locator."""
         try:
@@ -50,6 +52,8 @@ class MobileActions:
         except Exception as e:
             self.logger.log_error(e, "tap")
             raise
+
+    @step_decorator("Click element:")
     def click(self, locator: Union[Tuple[str, str], WebElement], **kwargs):
         """Click element by locator."""
         try:
@@ -63,6 +67,7 @@ class MobileActions:
             self.logger.log_error(e, "click")
             raise
 
+    @step_decorator("Tap at coordinates: x={x}, y={y}", attach_params=False)
     def tap_coordinates(self, x: int, y: int):
         """Tap at coordinates."""
         try:
@@ -75,6 +80,7 @@ class MobileActions:
             self.logger.log_error(e, "tap_coordinates")
             raise
     
+    @step_decorator("Long press element: {locator}, duration: {duration}ms")
     def long_press(self, locator: Union[Tuple[str, str], WebElement], duration: int = 2000):
         """Long press element."""
         try:
@@ -93,7 +99,7 @@ class MobileActions:
         except Exception as e:
             self.logger.log_error(e, "long_press")
             raise
-    
+    @step_decorator("Long press at coordinates: x={x}, y={y}, duration: {duration}ms")
     def long_press_coordinates(self, x: int, y: int, duration: int = 2000):
         """Long press at coordinates."""
         try:
@@ -110,6 +116,7 @@ class MobileActions:
             raise
     
         """Double tap element."""
+    @step_decorator("Double tap element: {locator}, time delay: {time_delay}ms")
     def  double_tap(self, locator: Union[Tuple[str, str],WebElement], time_delay: int = 100):
         try:
             self.logger.log_action("double_tap", str(locator))
@@ -127,7 +134,7 @@ class MobileActions:
         except Exception as e:
             self.logger.log_error(e, "double_tap")
             raise
-    
+    @step_decorator("Swipe from ({start_x},{start_y}) to ({end_x},{end_y}), duration: {duration}ms")
     def swipe(self, start_x: int, start_y: int, end_x: int, end_y: int, duration: int = 1000):
         """Swipe from start to end coordinates."""
         try:
@@ -136,7 +143,7 @@ class MobileActions:
         except Exception as e:
             self.logger.log_error(e, "swipe")
             raise
-    
+    @step_decorator("Swipe up, duration: {duration}ms")
     def swipe_up(self, duration: int = 1000):
         """Swipe up."""
         try:
@@ -149,7 +156,8 @@ class MobileActions:
         except Exception as e:
             self.logger.log_error(e, "swipe_up")
             raise
-    
+
+    @step_decorator("Swipe down, duration: {duration}ms")
     def swipe_down(self, duration: int = 1000):
         """Swipe down."""
         try:
@@ -162,7 +170,8 @@ class MobileActions:
         except Exception as e:
             self.logger.log_error(e, "swipe_down")
             raise
-    
+
+    @step_decorator("Swipe left, duration: {duration}ms")
     def swipe_left(self, duration: int = 1000):
         """Swipe left."""
         try:
@@ -176,6 +185,7 @@ class MobileActions:
             self.logger.log_error(e, "swipe_left")
             raise
     
+    @step_decorator("Swipe right, duration: {duration}ms")
     def swipe_right(self, duration: int = 1000):
         """Swipe right."""
         try:
@@ -189,6 +199,7 @@ class MobileActions:
             self.logger.log_error(e, "swipe_right")
             raise
     
+    @step_decorator("Scroll to element:")
     def scroll_to_element(self, locator: Tuple[str, str], timeout: int = 30, 
                      wait_after_scroll: float = 0.5, short_find_timeout: float = 2):
         """
@@ -251,7 +262,7 @@ class MobileActions:
         except Exception as e:
             self.logger.log_error(e, "scroll_to_element")
             raise
-    
+    @step_decorator("Scroll to text:")
     def scroll_to_text(self, text: str, timeout: int = 30, 
                   wait_after_scroll: float = 0.5, short_find_timeout: float = 2):
         """
@@ -354,6 +365,7 @@ class MobileActions:
             self.logger.log_error(e, "scroll_to_text")
             raise    
 
+    @step_decorator("Scroll to coordinates:")
     def scroll_to_coordinates(self, x: int, y: int, timeout: int = 30, 
                          wait_after_scroll: float = 0.5):
         """
@@ -466,6 +478,7 @@ class MobileActions:
             self.logger.log_error(e, "scroll_to_coordinates")
             raise
     
+    @step_decorator("Pinch zoom at coordinates x:{x}, y:{y}, scale:{scale}")
     def pinch_zoom(self, x: int, y: int, scale: float):
         """Pinch zoom at coordinates."""
         try:
@@ -484,6 +497,7 @@ class MobileActions:
             self.logger.log_error(e, "pinch_zoom")
             raise
     
+    @step_decorator("Drag and drop element from {source_locator} to {target_locator}")
     def drag_and_drop(self, source_locator: Union[Tuple[str, str], WebElement], target_locator: Union[Tuple[str, str], WebElement]):
         """Drag and drop element."""
         try:
@@ -509,6 +523,7 @@ class MobileActions:
             self.logger.log_error(e, "drag_and_drop")
             raise
     
+    @step_decorator("Send keys to element {locator}, text: {text}")
     def send_keys(self, locator: Union[Tuple[str, str], WebElement], text: str):
         """Send keys to element."""
         try:
@@ -522,6 +537,7 @@ class MobileActions:
             self.logger.log_error(e, "send_keys")
             raise
     
+    @step_decorator("Clear text from element {locator}")
     def clear_text(self, locator: Tuple[str, str]):
         """Clear text from element."""
         try:
@@ -532,6 +548,7 @@ class MobileActions:
             self.logger.log_error(e, "clear_text")
             raise
     
+    @step_decorator("Get text of element {locator}")
     def get_text(self, locator: Union[Tuple[str, str], WebElement]) -> str:
         """Get element text."""
         try:
@@ -546,6 +563,7 @@ class MobileActions:
             self.logger.log_error(e, "get_text")
             return ""
     
+    @step_decorator("Get element attribute:")
     def get_attribute(self, locator: Union[Tuple[str, str], WebElement], attribute: str) -> Optional[str]:
         """Get element attribute."""
         try:
@@ -560,6 +578,7 @@ class MobileActions:
             self.logger.log_error(e, "get_attribute")
             return None
     
+    @step_decorator("Check if element is displayed:")
     def is_displayed(self, locator: Tuple[str, str]) -> bool:
         """Check if element is displayed."""
         try:
@@ -570,6 +589,8 @@ class MobileActions:
         except Exception as e:
             self.logger.log_error(e, "is_displayed")
             return False
+    
+    @step_decorator("Check if element is visible:")
     def is_visible(self, locator: Tuple[str, str], timeout: Optional[int] = None) -> bool:
         """Check if element is visible."""
         try:
@@ -581,6 +602,8 @@ class MobileActions:
         except Exception as e:
             self.logger.log_warning(e, "verify_element_visible")
             return False
+        
+    @step_decorator("Check if element is present:")
     def is_present(self, locator: Tuple[str, str], timeout: Optional[int] = None) -> bool:
         """Verify element exists in DOM (may not be visible)."""
         try:
@@ -592,6 +615,7 @@ class MobileActions:
             self.logger.log_warning(e, "verify_element_present")
             return False
 
+    @step_decorator("Check if element is enabled: {locator}")
     def is_enabled(self, locator: Tuple[str, str]) -> bool:
         """Check if element is enabled."""
         try:
@@ -603,6 +627,7 @@ class MobileActions:
             self.logger.log_error(e, "is_enabled")
             return False
     
+    @step_decorator("Check if element is selected: {locator}")
     def is_selected(self, locator: Tuple[str, str]) -> bool:
         """Check if element is selected."""
         try:
@@ -613,7 +638,8 @@ class MobileActions:
         except Exception as e:
             self.logger.log_error(e, "is_selected")
             return False
-    
+        
+    @step_decorator("Wait for element to be present: {locator}")
     @retry_on_connection_error()
     def wait_for_element(self, locator: Tuple[str, str], timeout_default: int = 30):
         """Wait for element to be present."""
@@ -633,6 +659,7 @@ class MobileActions:
             self.logger.log_error(e, "wait_for_element")
             raise
     
+    @step_decorator("Wait for element to be visible: {locator}")
     @retry_on_connection_error()
     def wait_for_element_visible(self, locator: Tuple[str, str], timeout: int = 30):
         """Wait for element to be visible."""
@@ -652,6 +679,7 @@ class MobileActions:
             self.logger.log_error(e, "wait_for_element_visible")
             raise
     
+    @step_decorator("Wait for element to be clickable: {locator}")
     @retry_on_connection_error()
     def wait_for_element_clickable(self, locator: Tuple[str, str], timeout: int = 30):
         """Wait for element to be clickable."""
@@ -728,14 +756,14 @@ class MobileActions:
             self.logger.log_error(e, "long_press_keycode")
             raise
     
-    def take_screenshot(self, path: str = None) -> str:
+    def take_screenshot(self, name: str = None) -> ScreenshotResult:
         """Take screenshot."""
         try:
-            if not path:
-                path = f"reports/screenshots/mobile_{int(time.time())}.png"
-            self.driver.save_screenshot(path)
-            self.logger.log_screenshot(path)
-            return path
+            if not name:
+                name = f"reports/screenshots/mobile_{int(time.time())}.png"
+            self.driver.save_screenshot(name)
+            self.logger.log_screenshot(name)
+            return name
         except Exception as e:
             self.logger.log_error(e, "take_screenshot")
             return ""

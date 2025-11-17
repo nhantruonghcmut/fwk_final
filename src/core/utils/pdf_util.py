@@ -262,91 +262,6 @@ class PDFUtil:
             self.logger.log_error(e, "generate_detailed_report")
             raise
             
-    def generate_performance_report(self, performance_data: List[Dict[str, Any]], 
-                                  suite_name: str) -> str:
-        """Generate performance report PDF."""
-        try:
-            pdf = self.create_pdf()
-            
-            # Title
-            self.add_title(pdf, f"Performance Report - {suite_name}")
-            
-            # Performance summary
-            self.add_heading(pdf, "Performance Summary")
-            
-            if performance_data:
-                avg_duration = sum(d.get("duration", 0) for d in performance_data) / len(performance_data)
-                min_duration = min(d.get("duration", 0) for d in performance_data)
-                max_duration = max(d.get("duration", 0) for d in performance_data)
-                
-                self.add_text(pdf, f"Average Duration: {avg_duration:.2f} seconds")
-                self.add_text(pdf, f"Minimum Duration: {min_duration:.2f} seconds")
-                self.add_text(pdf, f"Maximum Duration: {max_duration:.2f} seconds")
-                self.add_text(pdf, f"Total Tests: {len(performance_data)}")
-                
-                # Performance table
-                self.add_heading(pdf, "Test Performance Details")
-                headers = ["Test Name", "Duration (s)", "Status"]
-                col_widths = [80, 30, 20]
-                
-                data = []
-                for perf in performance_data:
-                    row = [
-                        perf.get("name", "")[:50],
-                        f"{perf.get('duration', 0):.2f}",
-                        perf.get("status", "")
-                    ]
-                    data.append(row)
-                    
-                self.add_table(pdf, headers, data, col_widths)
-                
-            # Footer
-            self.add_footer(pdf)
-            
-            # Save PDF
-            file_path = f"reports/pdf/performance_report_{suite_name}_{int(datetime.now().timestamp())}.pdf"
-            self.save_pdf(pdf, file_path)
-            
-            return file_path
-            
-        except Exception as e:
-            self.logger.log_error(e, "generate_performance_report")
-            raise
-            
-    def generate_configuration_report(self, config_data: Dict[str, Any], 
-                                    suite_name: str) -> str:
-        """Generate configuration report PDF."""
-        try:
-            pdf = self.create_pdf()
-            
-            # Title
-            self.add_title(pdf, f"Configuration Report - {suite_name}")
-            
-            # Configuration details
-            self.add_heading(pdf, "Test Configuration")
-            
-            for section, data in config_data.items():
-                self.add_heading(pdf, section)
-                if isinstance(data, dict):
-                    for key, value in data.items():
-                        self.add_text(pdf, f"{key}: {value}")
-                else:
-                    self.add_text(pdf, str(data))
-                self.add_line(pdf)
-                
-            # Footer
-            self.add_footer(pdf)
-            
-            # Save PDF
-            file_path = f"reports/pdf/config_report_{suite_name}_{int(datetime.now().timestamp())}.pdf"
-            self.save_pdf(pdf, file_path)
-            
-            return file_path
-            
-        except Exception as e:
-            self.logger.log_error(e, "generate_configuration_report")
-            raise
-            
     def add_chart_description(self, pdf: FPDF, chart_type: str, description: str):
         """Add chart description to PDF."""
         try:
@@ -355,28 +270,7 @@ class PDFUtil:
         except Exception as e:
             self.logger.log_error(e, "add_chart_description")
             raise
-            
-    def add_code_block(self, pdf: FPDF, code: str, language: str = ""):
-        """Add code block to PDF."""
-        try:
-            self.add_heading(pdf, f"Code Block ({language})" if language else "Code Block")
-            
-            # Split code into lines and add each line
-            lines = code.split('\n')
-            pdf.set_font('Courier', '', 8)
-            
-            for line in lines:
-                # Truncate very long lines
-                if len(line) > 80:
-                    line = line[:80] + "..."
-                pdf.cell(0, 4, self._encode_text(line), 0, 1, 'L')
-                
-            pdf.ln(2)
-            
-        except Exception as e:
-            self.logger.log_error(e, "add_code_block")
-            raise
-            
+     
     def add_list(self, pdf: FPDF, items: List[str], list_type: str = "bullet"):
         """Add list to PDF."""
         try:
@@ -401,22 +295,7 @@ class PDFUtil:
         except Exception as e:
             self.logger.log_error(e, "add_section_break")
             raise
-            
-    def get_pdf_info(self, pdf: FPDF) -> Dict[str, Any]:
-        """Get PDF information."""
-        try:
-            return {
-                "page_count": pdf.page_no(),
-                "current_y": pdf.get_y(),
-                "current_x": pdf.get_x(),
-                "font_family": pdf.font_family,
-                "font_style": pdf.font_style,
-                "font_size": pdf.font_size
-            }
-        except Exception as e:
-            self.logger.log_error(e, "get_pdf_info")
-            return {}
-            
+       
     def add_watermark(self, pdf: FPDF, text: str):
         """Add watermark to PDF."""
         try:

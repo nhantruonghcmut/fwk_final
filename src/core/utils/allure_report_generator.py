@@ -455,10 +455,15 @@ class AllureReportGenerator:
                 
             report_dir = self.config_manager.get_allure_report_directory()
             
-            # Convert relative paths to absolute paths
+            # Use relative paths anchored to project root
             from pathlib import Path
-            results_dir_abs = Path(self.results_dir).resolve()
-            report_dir_abs = Path(report_dir).resolve()
+            import sys
+            
+            # Get project root (adjust based on your structure)
+            project_root = Path(__file__).parent.parent.parent.parent  # Goes up to fwk 1311
+            
+            results_dir_abs = (project_root / self.results_dir).resolve()
+            report_dir_abs = (project_root / report_dir).resolve()
             
             # Ensure directories exist
             os.makedirs(results_dir_abs, exist_ok=True)
@@ -473,6 +478,7 @@ class AllureReportGenerator:
             import subprocess
             import platform
             
+            # Don't quote paths when using list format (subprocess handles it)
             cmd = [
                 "allure", "generate",
                 str(results_dir_abs),
@@ -482,8 +488,6 @@ class AllureReportGenerator:
             
             self.logger.info(f"Generating Allure report: {' '.join(cmd)}")
             
-            # On Windows, use shell=True to ensure PATH is properly resolved
-            # This allows subprocess to find commands in PATH like cmd.exe does
             use_shell = platform.system() == "Windows"
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, shell=use_shell)
             
@@ -499,12 +503,12 @@ class AllureReportGenerator:
                     self.logger.error(f"stdout: {result.stdout}")
                 if result.stderr:
                     self.logger.error(f"stderr: {result.stderr}")
-                
+            
         except FileNotFoundError:
             self.logger.warning("Allure CLI not found. Install with: scoop install allure")
         except subprocess.TimeoutExpired:
             self.logger.error("Report generation timed out after 5 minutes")
         except Exception as e:
             self.logger.log_error(e, "generate_report")
-            
-            
+
+

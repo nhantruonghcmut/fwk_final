@@ -2,17 +2,16 @@
 Element object wrapper for web and mobile elements.
 """
 import time
-from typing import Any, Optional, List, Dict
+from typing import Any, Optional, List, Dict, Union
 from playwright.sync_api import Locator as PlaywrightLocator
-# from selenium.webdriver.remote.webelement import WebElement as SeleniumWebElement
+from playwright.async_api import Page
 from appium.webdriver.common.appiumby import AppiumBy
 from appium.webdriver.webelement import WebElement as AppiumWebElement  # Consider updating this import
-from src.core.utils.report_logger import ReportLogger
-from typing import Union, Any
 from appium.webdriver.webdriver import WebDriver as AppiumDriver
-from playwright.async_api import Page
+from src.core.utils.report_logger import ReportLogger
 from src.core.utils.web_action import WebActions
 from src.core.utils.mobile_action import MobileActions
+from src.core.utils.allure_step import step_decorator
 
 class ElementObject:
     """Wrapper class for web and mobile elements."""
@@ -46,6 +45,7 @@ class ElementObject:
             return "appium"
         return "unknown"
     
+    @step_decorator("Get element")
     def get_element(self, selector: Union[str, tuple]):
         """Get element by selector."""
         if self.element_type == "playwright":
@@ -57,6 +57,7 @@ class ElementObject:
                 locator = (AppiumBy.ID, selector)
             return ElementObject(self.element.find_element(*locator), self.root_driver)
 
+    @step_decorator("Get elements")
     def get_elements(self, selector: Union[str, tuple]):
         """Get multiple elements by selector."""
         if self.element_type == "playwright":
@@ -66,7 +67,8 @@ class ElementObject:
             strategy, value = selector if isinstance(selector, tuple) else ("id", selector)
             elements = self.element.find_elements(getattr(AppiumBy, strategy.upper()), value)
             return [ElementObject(element, self.root_driver) for element in elements]    
-
+        
+    @step_decorator("Click element {self.element}")
     def click(self, **kwargs):
         """Click element."""
         try:
@@ -79,6 +81,7 @@ class ElementObject:
             self.logger.log_error(e, "click")
             raise
     
+    @step_decorator("Double click element {self.element}")
     def double_click(self, **kwargs):
         """Double click element."""
         try:
@@ -91,6 +94,7 @@ class ElementObject:
             self.logger.log_error(e, "double_click")
             raise
     
+    @step_decorator("Right click element {self.element}")
     def right_click(self, **kwargs):
         """Right click element."""
         try:
@@ -103,6 +107,7 @@ class ElementObject:
             self.logger.log_error(e, "right_click")
             raise
     
+    @step_decorator("Hover element {self.element}")
     def hover(self, **kwargs):
         """Hover over element."""
         try:
@@ -115,6 +120,7 @@ class ElementObject:
             self.logger.log_error(e, "hover")
             raise
 
+    @step_decorator("Double tap element {self.element}")
     def double_tap(self):
         """Double tap element (Appium only)."""
         if self.element_type != "appium":
@@ -128,6 +134,7 @@ class ElementObject:
                 self.logger.log_error(e, "double_tap")
                 raise
 
+    @step_decorator("Long tap element {self.element}")
     def long_tap(self, duration=1000):
         """Long tap element (Appium only)."""
         if self.element_type != "appium":
@@ -141,6 +148,7 @@ class ElementObject:
                 self.logger.log_error(e, "long_tap")
                 raise
 
+    @step_decorator("Fill element {self.element}")
     def fill(self, value: str, **kwargs):
         """Fill element with value."""
         try:
@@ -153,7 +161,8 @@ class ElementObject:
         except Exception as e:
             self.logger.log_error(e, "fill")
             raise
-    
+
+    @step_decorator("Type text into element {self.element}")
     def type_text(self, text: str, **kwargs):
         """Type text into element."""
         try:
@@ -167,6 +176,7 @@ class ElementObject:
             self.logger.log_error(e, "type_text")
             raise
     
+    @step_decorator("Clear element")
     def clear(self):
         """Clear element content."""
         try:
@@ -179,6 +189,7 @@ class ElementObject:
             self.logger.log_error(e, "clear")
             raise
     
+    @step_decorator("Get element text")
     def get_text(self) -> str:
         """Get element text."""
         try:
@@ -190,6 +201,7 @@ class ElementObject:
             self.logger.log_error(e, "get_text")
             return ""
     
+    @step_decorator("Get element attribute")
     def get_attribute(self, attribute_name: str) -> Optional[str]:
         """Get element attribute."""
         try:
@@ -201,6 +213,7 @@ class ElementObject:
             self.logger.log_error(e, "get_attribute")
             return None
     
+    @step_decorator("Get element property")
     def get_property(self, property_name: str) -> Any:
         """Get element property."""
         try:
@@ -212,6 +225,7 @@ class ElementObject:
             self.logger.log_error(e, "get_property")
             return None
     
+    @step_decorator("Check if element is visible")
     def is_visible(self) -> bool:
         """Check if element is visible."""
         try:
@@ -223,6 +237,7 @@ class ElementObject:
             self.logger.log_error(e, "is_visible")
             return False
     
+    @step_decorator("Check if element is enabled")
     def is_enabled(self) -> bool:
         """Check if element is enabled."""
         try:
@@ -234,6 +249,7 @@ class ElementObject:
             self.logger.log_error(e, "is_enabled")
             return False
     
+    @step_decorator("Check if element is selected")
     def is_selected(self) -> bool:
         """Check if element is selected."""
         try:
@@ -245,6 +261,7 @@ class ElementObject:
             self.logger.log_error(e, "is_selected")
             return False
     
+    @step_decorator("Wait for element to be visible")
     def wait_for_visible(self, timeout: int = 30000):
         """Wait for element to be visible."""
         try:
@@ -258,6 +275,7 @@ class ElementObject:
             self.logger.log_error(e, "wait_for_visible")
             raise
     
+    @step_decorator("Wait for element to be hidden")
     def wait_for_hidden(self, timeout: int = 30000):
         """Wait for element to be hidden."""
         try:
@@ -271,7 +289,7 @@ class ElementObject:
             self.logger.log_error(e, "wait_for_hidden")
             raise
 
-
+    @step_decorator("Wait for text in element")
     def wait_for_text(self, text: str, timeout: int = 30000):
         """Wait for text to appear within this element. This is unified for both Playwright and Appium."""
         try:
@@ -292,6 +310,7 @@ class ElementObject:
             self.logger.log_error(e, "wait_for_text")
             raise
 
+    @step_decorator("Scroll element into view")
     def scroll_into_view(self):
         """Scroll element into view."""
         try:
@@ -304,6 +323,7 @@ class ElementObject:
             self.logger.log_error(e, "scroll_into_view")
             raise
     
+    @step_decorator("Select option from dropdown")
     def select_option(self, value: str):
         """Select option from dropdown."""
         try:
@@ -317,6 +337,7 @@ class ElementObject:
             self.logger.log_error(e, "select_option")
             raise
     
+    @step_decorator("Select option by visible text")
     def select_option_by_text(self, text: str):
         """Select option by visible text."""
         try:
@@ -330,6 +351,7 @@ class ElementObject:
             self.logger.log_error(e, "select_option_by_text")
             raise
     
+    @step_decorator("Check element")
     def check(self):
         """Check checkbox or radio button."""
         try:
@@ -343,6 +365,7 @@ class ElementObject:
             self.logger.log_error(e, "check")
             raise
     
+    @step_decorator("Uncheck element")
     def uncheck(self):
         """Uncheck checkbox."""
         try:
@@ -355,7 +378,8 @@ class ElementObject:
         except Exception as e:
             self.logger.log_error(e, "uncheck")
             raise
-    
+
+    @step_decorator("Upload file")
     def upload_file(self, file_path: str):
         """Upload file to file input."""
         try:
@@ -368,6 +392,7 @@ class ElementObject:
             self.logger.log_error(e, "upload_file")
             raise
     
+    @step_decorator("Drag element to target")
     def drag_to(self, target_element: 'ElementObject'):
         """Drag element to target."""
         try:
@@ -381,6 +406,7 @@ class ElementObject:
             self.logger.log_error(e, "drag_to")
             raise
     
+    @step_decorator("Get element location")
     def get_location(self) -> Dict[str, int]:
         """Get element location."""
         try:
@@ -394,6 +420,7 @@ class ElementObject:
             self.logger.log_error(e, "get_location")
             return {"x": 0, "y": 0}
     
+    @step_decorator("Get element size")
     def get_size(self) -> Dict[str, int]:
         """Get element size."""
         try:
@@ -407,6 +434,7 @@ class ElementObject:
             self.logger.log_error(e, "get_size")
             return {"width": 0, "height": 0}
     
+    @step_decorator("Get element rectangle")
     def get_rect(self) -> Dict[str, int]:
         """Get element rectangle."""
         try:
@@ -420,6 +448,7 @@ class ElementObject:
             self.logger.log_error(e, "get_rect")
             return {"x": 0, "y": 0, "width": 0, "height": 0}
     
+    @step_decorator("Execute script on element")
     def execute_script(self, script: str, *args) -> Any:
         """Execute JavaScript on element."""
         try:
@@ -431,7 +460,8 @@ class ElementObject:
         except Exception as e:
             self.logger.log_error(e, "execute_script")
             raise
-    
+
+    @step_decorator("Take screenshot of element")
     def take_screenshot(self, path: str = None) -> str:
         """Take screenshot of element."""
         try:
@@ -449,6 +479,7 @@ class ElementObject:
             self.logger.log_error(e, "take_screenshot")
             return ""
     
+    @step_decorator("Get element inner HTML")
     def get_inner_html(self) -> str:
         """Get element inner HTML."""
         try:
@@ -460,6 +491,7 @@ class ElementObject:
             self.logger.log_error(e, "get_inner_html")
             return ""
     
+    @step_decorator("Get element outer HTML")
     def get_outer_html(self) -> str:
         """Get element outer HTML."""
         try:
@@ -472,6 +504,7 @@ class ElementObject:
             self.logger.log_error(e, "get_outer_html")
             return ""
     
+    @step_decorator("Get count of elements")
     def count(self) -> int:
         """Get count of elements."""
         try:
@@ -483,6 +516,7 @@ class ElementObject:
             self.logger.log_error(e, "count")
             return 0
     
+    @step_decorator("Get all matching elements")
     def all(self) -> List['ElementObject']:
         """Get all matching elements."""
         try:
@@ -495,6 +529,7 @@ class ElementObject:
             self.logger.log_error(e, "all")
             return []
     
+    @step_decorator("Get first matching element")
     def first(self) -> 'ElementObject':
         """Get first matching element."""
         try:
@@ -506,6 +541,7 @@ class ElementObject:
             self.logger.log_error(e, "first")
             return self
     
+    @step_decorator("Get nth matching element")
     def nth(self, index: int) -> 'ElementObject':
         """Get nth matching element."""
         try:
@@ -541,6 +577,7 @@ class ElementObject:
             raise
 
     # Commonly used Locator-like methods
+    @step_decorator("Focus element")
     def focus(self, **kwargs):
         try:
             self.logger.log_action("focus", str(self.element))
@@ -553,6 +590,7 @@ class ElementObject:
             self.logger.log_error(e, "focus")
             raise
 
+    @step_decorator("Blur element")
     def blur(self):
         try:
             self.logger.log_action("blur", str(self.element))
@@ -566,6 +604,7 @@ class ElementObject:
             self.logger.log_error(e, "blur")
             raise
 
+    @step_decorator("Press key on element")
     def press(self, key: str, **kwargs):
         try:
             self.logger.log_action("press", str(self.element), key)
@@ -580,6 +619,7 @@ class ElementObject:
             self.logger.log_error(e, "press")
             raise
 
+    @step_decorator("Get element input value")
     def input_value(self) -> str:
         try:
             if self.element_type == "playwright":
@@ -590,7 +630,8 @@ class ElementObject:
         except Exception as e:
             self.logger.log_error(e, "input_value")
             return ""
-
+        
+    @step_decorator("Get element inner text")
     def inner_text(self) -> str:
         try:
             if self.element_type == "playwright":
@@ -605,6 +646,7 @@ class ElementObject:
             self.logger.log_error(e, "inner_text")
             return ""
 
+    @step_decorator("Dispatch event on element")
     def dispatch_event(self, type: str, event_init: Optional[Dict[str, Any]] = None):
         try:
             self.logger.log_action("dispatch_event", str(self.element), type)
@@ -622,7 +664,7 @@ class ElementObject:
         except Exception as e:
             self.logger.log_error(e, "dispatch_event")
             raise
-
+    @step_decorator("Evaluate script on element")
     def evaluate(self, script: str, arg: Any = None) -> Any:
         try:
             self.logger.log_action("evaluate", str(self.element), script)
