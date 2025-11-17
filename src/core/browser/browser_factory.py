@@ -1,7 +1,10 @@
 """
 Browser factory for creating thread-safe browser instances using Playwright Sync API.
 """
+import os
 import threading
+import time
+from pathlib import Path
 from typing import Dict, Optional, Any
 from playwright.sync_api import sync_playwright, Browser, BrowserContext, Page
 from src.core.browser.browser_type import BrowserType
@@ -325,3 +328,81 @@ class BrowserFactory:
         context = self.create_context(browser)
         page = self.create_page(context)
         return browser, context, page
+    
+    # ============================================
+    # TRACING METHODS
+    # ============================================
+    
+    def start_tracing(self, context: Optional[BrowserContext] = None, **kwargs):
+        """
+        Start tracing for browser context.
+        
+        Args:
+            context: Browser context to start tracing on. If None, uses current thread's context.
+            **kwargs: Tracing options (screenshots, snapshots, sources)
+        """
+        if context is None:
+            current_thread = threading.current_thread()
+            context = self.get_context_for_thread(current_thread)
+        
+        if context is None:
+            self.logger.warning("[TRACE] No context available for tracing")
+            return False
+        
+        try:
+            # Get trace config from ConfigManager
+            trace_config = self.config_manager.get_trace_config()
+            
+            # Build tracing options
+            tracing_options = {
+                "screenshots": kwargs.get("screenshots", trace_config.get("screenshots", True)),
+                "snapshots": kwargs.get("snapshots", trace_config.get("snapshots", True)),
+                "sources": kwargs.get("sources", trace_config.get("sources", True))
+            }
+            
+            context.tracing.start(**tracing_options)
+            self.logger.info(f"[TRACE] Started tracing for context (screenshots={tracing_options['screenshots']}, snapshots={tracing_options['snapshots']}, sources={tracing_options['sources']})")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"[TRACE] Failed to start tracing: {str(e)}")
+            return False
+    
+    def stop_tracing(self, context: Optional[BrowserContext] = None, path: Optional[str] = None) -> Optional[str]:
+        """
+        Stop tracing and save to file.
+        
+        Args:
+            context: Browser context to stop tracing on. If None, uses current thread's context.
+            path: Path to save trace.zip file. If None, generates path from config.
+            
+        Returns:
+            Path to saved trace.zip file, or None if failed
+        """
+        if context is None:
+            current_thread = threading.current_thread()
+            context = self.get_context_for_thread(current_thread)
+        
+        if context is None:
+            self.logger.warning("[TRACE] No context available to stop tracing")
+            return None
+        
+        try:
+            # Generate path if not provided
+            if path is None:
+                trace_dir = self.config_manager.get_trace_directory()
+                Path(trace_dir).mkdir(parents=True, exist_ok=True)
+                timestamp = int(time.time())
+                path = os.path.join(trace_dir, f"trace_{timestamp}.zip")
+            
+            # Ensure directory exists
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
+            
+            # Stop tracing and save
+            context.tracing.stop(path=path)
+            self.logger.info(f"[TRACE] Stopped tracing and saved to: {path}")
+            return path
+            
+        except Exception as e:
+            self.logger.error(f"[TRACE] Failed to stop tracing: {str(e)}")
+            return None

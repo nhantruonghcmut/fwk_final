@@ -130,19 +130,6 @@ allure:
   clean_on_start: true  # will clear previous allure results on start
 
 
-# Browser context configuration (common settings)
-context:
-  viewport:
-    width: 1920
-    height: 1080
-  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-  locale: "en-US"
-  timezone_id: "America/New_York"
-  permissions: ["geolocation", "notifications"]
-  extra_http_headers:
-    Accept-Language: "en-US,en;q=0.9"
-
-
 # Test data configuration
 test_data:
   # data_test_signup: "testdata/data_test_signup.yaml"

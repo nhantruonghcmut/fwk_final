@@ -431,12 +431,18 @@ class ConfigManager:
     
     def get_context_config(self) -> Dict[str, Any]:
         """
-        Get browser context configuration from config.yaml.
+        Get browser context configuration from web_config.yaml.
         Returns normalized context options ready for Playwright browser.new_context().
         
         Returns:
             Dict containing context configuration (viewport, user_agent, locale, etc.)
         """
+        # Context config is only available for web platform
+        if self._platform != "web":
+            return {}
+        
+        # Get context config from platform config (web_config.yaml)
+        # get_config_value() already prioritizes platform config over global config
         context_config = self.get_config_value('context', {})
         
         # Normalize context config to ensure proper format
@@ -490,14 +496,19 @@ class ConfigManager:
     
     def get_mobile_context_config(self) -> Dict[str, Any]:
         """
-        Get mobile context configuration (timezone, locale).
+        Get mobile context configuration (timezone, locale) from mobile_config.yaml.
         Returns normalized config ready for Appium capabilities.
         
         Returns:
             Dict containing mobile context configuration
         """
-        mobile_config = self.get_mobile_config()
-        context_config = mobile_config.get("context", {})
+        # Context config is only available for mobile platform
+        if self._platform != "mobile":
+            return {}
+        
+        # Get context config from platform config (mobile_config.yaml)
+        # get_config_value() already prioritizes platform config over global config
+        context_config = self.get_config_value('context', {})
         
         normalized = {}
         
@@ -515,6 +526,58 @@ class ConfigManager:
         """Get web configuration."""
         config = self.get_config()
         return config.get("web", {})
+    
+    def get_trace_config(self) -> Dict[str, Any]:
+        """
+        Get Playwright tracing configuration from web_config.yaml.
+        Returns default config if not found or platform is not web.
+        
+        Returns:
+            Dict containing trace configuration (enabled, on_failure, on_success, directory, etc.)
+        """
+        if self._platform != "web":
+            return {
+                "enabled": False,
+                "on_failure": False,
+                "on_success": False,
+                "directory": "reports/traces",
+                "screenshots": True,
+                "snapshots": True,
+                "sources": True
+            }
+        
+        trace_config = self.get_config_value("playwright.trace", {})
+        
+        # Return with defaults
+        return {
+            "enabled": trace_config.get("enabled", False),
+            "on_failure": trace_config.get("on_failure", True),
+            "on_success": trace_config.get("on_success", False),
+            "directory": trace_config.get("directory", "reports/traces"),
+            "screenshots": trace_config.get("screenshots", True),
+            "snapshots": trace_config.get("snapshots", True),
+            "sources": trace_config.get("sources", True)
+        }
+    
+    def is_trace_enabled(self) -> bool:
+        """Check if tracing is enabled."""
+        trace_config = self.get_trace_config()
+        return trace_config.get("enabled", False)
+    
+    def should_trace_on_failure(self) -> bool:
+        """Check if trace should be saved on test failure."""
+        trace_config = self.get_trace_config()
+        return trace_config.get("enabled", False) and trace_config.get("on_failure", True)
+    
+    def should_trace_on_success(self) -> bool:
+        """Check if trace should be saved on test success."""
+        trace_config = self.get_trace_config()
+        return trace_config.get("enabled", False) and trace_config.get("on_success", False)
+    
+    def get_trace_directory(self) -> str:
+        """Get trace directory path."""
+        trace_config = self.get_trace_config()
+        return trace_config.get("directory", "reports/traces")
 
 
     def get_timeout_config(self) -> Dict[str, Any]:

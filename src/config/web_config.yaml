@@ -27,3 +27,26 @@ web:
   retry:
     count: 3
     delay: 1000
+  
+  # Browser context configuration (Playwright specific)
+  context:
+    viewport:
+      width: 1920
+      height: 1080
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    locale: "en-US"
+    timezone_id: "America/New_York"
+    permissions: ["geolocation", "notifications"]
+    extra_http_headers:
+      Accept-Language: "en-US,en;q=0.9"
+  
+  # Playwright tracing configuration
+  playwright:
+    trace:
+      enabled: true
+      on_failure: true  # Lưu trace.zip khi test fail
+      on_success: false  # Lưu trace.zip khi test pass (có thể bật để debug)
+      directory: "reports/traces"
+      screenshots: true  # Include screenshots in trace
+      snapshots: true  # Include DOM snapshots in trace
+      sources: true  # Include source files in trace

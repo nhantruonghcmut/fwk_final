@@ -58,6 +58,34 @@ class AllureReportGenerator:
             self.logger.warning("Allure not available, skipping screenshot")
         except Exception as e:
             self.logger.log_error(e, "add_screenshot")
+    
+    def add_trace(self, trace_path: str, name: str = "Playwright Trace"):
+        """
+        Add Playwright trace.zip file to Allure report.
+        
+        Args:
+            trace_path: Path to trace.zip file
+            name: Name for the attachment in Allure report
+        """
+        try:
+            import allure
+            
+            if os.path.exists(trace_path):
+                with open(trace_path, 'rb') as f:
+                    allure.attach(
+                        f.read(),
+                        name,
+                        allure.attachment_type.ZIP,
+                        extension="zip"
+                    )
+                self.logger.info(f"Added trace file to Allure: {name} ({trace_path})")
+            else:
+                self.logger.warning(f"Trace file not found: {trace_path}")
+                
+        except ImportError:
+            self.logger.warning("Allure not available, skipping trace attachment")
+        except Exception as e:
+            self.logger.log_error(e, "add_trace")
             
     def add_log(self, log_content: str, name: str = "Test Log"):
         """Add log to Allure report."""

@@ -214,3 +214,46 @@ class BaseWeb(BaseTest):
             f"() => window.location.href !== '{current_url}'",
             timeout=timeout
         )
+    
+    def save_login_session(self, session_file_path: str = None, session_name: str = "login_session"):
+        """Lưu session đăng nhập (cookies, localStorage, sessionStorage) vào file.
+        
+        Args:
+            session_file_path: Đường dẫn đầy đủ đến file để lưu session. 
+                              Nếu None, sẽ lưu vào thư mục sessions/ với tên mặc định.
+            session_name: Tên file session (không bao gồm extension). 
+                         Chỉ sử dụng khi session_file_path là None.
+        
+        Returns:
+            str: Đường dẫn đến file session đã lưu.
+        """
+        try:
+            from pathlib import Path
+            
+            # Xác định đường dẫn file session
+            if session_file_path is None:
+                # Tạo thư mục sessions nếu chưa tồn tại
+                sessions_dir = Path("sessions")
+                sessions_dir.mkdir(parents=True, exist_ok=True)
+                
+                # Tạo tên file với timestamp để tránh trùng lặp
+                import time
+                timestamp = int(time.time())
+                session_file_path = sessions_dir / f"{session_name}_{timestamp}.json"
+            else:
+                session_file_path = Path(session_file_path)
+                # Tạo thư mục cha nếu chưa tồn tại
+                session_file_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Lưu storage state (cookies, localStorage, sessionStorage)
+            self.page.context.storage_state(path=str(session_file_path))
+            
+            self.log_test_step(f"Đã lưu session đăng nhập vào: {session_file_path}")
+            self.logger.info(f"Login session saved to: {session_file_path}")
+            
+            return str(session_file_path)
+            
+        except Exception as e:
+            error_msg = f"Lỗi khi lưu session đăng nhập: {str(e)}"
+            self.logger.error(error_msg)
+            raise Exception(error_msg)

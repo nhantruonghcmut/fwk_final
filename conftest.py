@@ -78,14 +78,42 @@ def pytest_addoption(parser):
 
 def pytest_ignore_collect(path, config):
     """
-    Ignore collection of files in src/ directory to prevent pytest from 
-    trying to collect framework classes (TestContext, TestListener, etc.)
+    Ignore collection of files based on directory path.
+    - Always ignore src/ directory (framework code)
+    - In mobile mode: ignore tests/web/ directory
+    - In web mode: ignore tests/mobile/ directory
     """
     import os
     path_str = str(path)
-    # Ignore all files in src/ directory
+    
+    # Always ignore all files in src/ directory (framework code)
     if os.path.sep + "src" + os.path.sep in path_str or path_str.startswith("src" + os.path.sep):
         return True
+    
+    # Check if this is a test file (Python file)
+    if not path_str.endswith(".py"):
+        return None
+    
+    # Get mobile flag from config (may not be available yet, so use try-except)
+    try:
+        is_mobile = config.getoption("--mobile", default=False)
+    except (ValueError, AttributeError):
+        # Config option not available yet, skip filtering
+        return None
+    
+    # Normalize path separators for cross-platform compatibility
+    normalized_path = path_str.replace("\\", "/")
+    
+    # In mobile mode: ignore tests/web/ directory
+    if is_mobile:
+        if "/tests/web/" in normalized_path or normalized_path.startswith("tests/web/"):
+            return True
+    
+    # In web mode (default): ignore tests/mobile/ directory
+    else:
+        if "/tests/mobile/" in normalized_path or normalized_path.startswith("tests/mobile/"):
+            return True
+    
     return None
 
 def pytest_configure(config):
@@ -327,6 +355,12 @@ def browser(request, browser_type, test_config) -> Generator[Page, None, None]:
             if context_config:
                 test_context.set_browser_context_config(context_config)
                 logger.debug(f"[BROWSER] Context config saved to test_context: {context_config}")
+        
+        # Start tracing nếu được bật trong config
+        if config_manager.is_trace_enabled():
+            browser_factory.start_tracing(context)
+            logger.info("[TRACE] Tracing started for test")
+        
         yield page
     finally:
         current_thread = threading.current_thread()
@@ -726,6 +760,65 @@ def pytest_runtest_makereport(item, call):
     
     if report.when == "call" and "browser" in item.funcargs:
         page = item.funcargs["browser"]
+        current_thread = threading.current_thread()
+        context = browser_factory.get_context_for_thread(current_thread)
+        
+        # Handle tracing: stop and save trace.zip
+        if context and config_manager.is_trace_enabled():
+            should_save_trace = False
+            trace_name = None
+            
+            if report.failed and config_manager.should_trace_on_failure():
+                should_save_trace = True
+                trace_name = f"Trace - {item.name} (Failed)"
+            elif report.passed and config_manager.should_trace_on_success():
+                should_save_trace = True
+                trace_name = f"Trace - {item.name} (Passed)"
+            
+            if should_save_trace:
+                try:
+                    from pathlib import Path
+                    import os
+                    import time
+                    
+                    trace_dir = config_manager.get_trace_directory()
+                    Path(trace_dir).mkdir(parents=True, exist_ok=True)
+                    
+                    # Generate trace file name with test name and timestamp
+                    timestamp = int(time.time())
+                    safe_test_name = item.name.replace(" ", "_").replace("/", "_")[:50]  # Limit length
+                    trace_filename = f"trace_{safe_test_name}_{timestamp}.zip"
+                    trace_path = os.path.join(trace_dir, trace_filename)
+                    
+                    # Stop tracing and save
+                    saved_trace_path = browser_factory.stop_tracing(context, trace_path)
+                    
+                    if saved_trace_path and os.path.exists(saved_trace_path):
+                        logger.info(f"[TRACE] Trace saved: {saved_trace_path}")
+                        
+                        # Attach trace to Allure if enabled
+                        if config_manager.is_allure_enabled():
+                            allure_generator.add_trace(saved_trace_path, trace_name or "Playwright Trace")
+                            logger.info(f"[TRACE] Trace attached to Allure: {trace_name}")
+                        
+                        # Add trace path to test_context
+                        test_context = getattr(item, "test_context", None)
+                        if test_context:
+                            test_context.set("trace_path", saved_trace_path)
+                    else:
+                        logger.warning("[TRACE] Failed to save trace file")
+                        
+                except Exception as e:
+                    logger.error(f"[TRACE] Error handling trace: {e}")
+            else:
+                # Stop tracing without saving (if not configured to save)
+                try:
+                    # Just stop tracing, don't save
+                    if context:
+                        context.tracing.stop()
+                        logger.debug("[TRACE] Tracing stopped (not saved)")
+                except Exception as e:
+                    logger.debug(f"[TRACE] Error stopping trace: {e}")
         
         # Screenshot on failure
         if report.failed and config_manager.should_take_screenshot_on_failure():
@@ -1016,12 +1109,14 @@ def pytest_sessionfinish(session, exitstatus):
 def pytest_collection_modifyitems(config, items):
     """
     Modify test collection based on run mode.
-    - Mobile mode: skip web tests, group theo device để tránh tranh chấp thiết bị.
-    - Web mode: skip mobile tests.
+    Note: Files in tests/web/ and tests/mobile/ are already filtered in pytest_ignore_collect.
+    This function handles:
+    - Additional marker-based filtering (for tests outside standard directories)
+    - Device grouping for mobile tests (parallel execution)
     """
     if config.getoption("--mobile"):
         for item in items:
-            # Skip web tests trong mobile mode (giữ logic cũ)
+            # Skip web tests by marker (backup filter for tests outside tests/web/)
             if any(m.name.endswith("_web") for m in item.iter_markers()):
                 item.add_marker(pytest.mark.skip(reason="Mobile mode - skipping web test"))
 
@@ -1037,6 +1132,7 @@ def pytest_collection_modifyitems(config, items):
                 pass
     else:
         for item in items:
+            # Skip mobile tests by marker (backup filter for tests outside tests/mobile/)
             if any(m.name.endswith("_mobile") for m in item.iter_markers()):
                 item.add_marker(pytest.mark.skip(reason="Web mode - skipping mobile test"))
 
